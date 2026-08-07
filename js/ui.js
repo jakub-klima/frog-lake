@@ -9,6 +9,8 @@
     if (html != null) e.innerHTML = html;
     return e;
   };
+  const esc = s => String(s).replace(/[&<>"']/g, ch =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
   const pctX = c => ((FL.ART.X0 + FL.ART.DX * c) / FL.ART.W) * 100;
   const pctY = r => ((FL.ART.Y0 + FL.ART.DY * r) / FL.ART.H) * 100;
@@ -16,10 +18,13 @@
 
   let game = null;
   let cellEls = {};
+  let frogEls = {};          // trvalé elementy žab, aby šel animovat skok
+  let lastPos = {};          // poslední vykreslená pozice žab
+  let lastFlash = null;      // naposledy zvýrazněná událost
 
-  // ================== SETUP ==================
   const DEFAULT_NAMES = ['Kvákal', 'Skokan', 'Rosnička', 'Bahňák', 'Zelenka', 'Pulec', 'Ropušák', 'Blatnice'];
 
+  // ================== NASTAVENÍ ==================
   function renderNameFields() {
     const n = +$('playerCount').value;
     const wrap = $('nameFields');
@@ -45,11 +50,12 @@
       players: names,
       leapPrice: Math.max(1, +$('leapPrice').value || 10)
     });
+    FL.game = game;
     game.onChange = render;
-    FL.game = game; // pro ladění v konzoli
     $('setup').classList.add('hidden');
     $('game').classList.remove('hidden');
     buildCells();
+    frogEls = {}; lastPos = {};
     render();
   }
 
@@ -64,7 +70,6 @@
         d.style.left = pctX(c) + '%';
         d.style.top = pctY(r) + '%';
         d.style.width = CELL_PCT + '%';
-        d.style.aspectRatio = '1 / 1';
         d.dataset.r = r;
         d.dataset.c = c;
         d.title = tooltip(r, c);
@@ -81,7 +86,7 @@
     const t = game.tile(r, c);
     let s = FL.TILE_NAME[t.type];
     if (FL.inLake(r, c)) s += ` ${r}-${c}`;
-    if (t.type === T.WHIRL) s += ' – šipky: ' + t.dirs.map(d => game.arrowGlyph(d[0], d[1])).join(' ');
+    if (t.type === T.WHIRL) s += ' – šipky: ' + t.dirs.map(d => FL.arrowGlyph(d[0], d[1])).join(' ');
     if (t.type === T.BIG) s += ' – odsud lze provést veleskok';
     return s;
   }
@@ -96,90 +101,156 @@
     });
   }
 
-  function renderBoard() {
+  function renderCells() {
     const pend = game.pending;
     const pickable = pend && pend.kind === 'cell' ? new Set(pend.cells) : null;
-
     Object.keys(cellEls).forEach(k => {
       cellEls[k].classList.toggle('pickable', !!(pickable && pickable.has(k)));
     });
     $('cells').classList.toggle('targeting', !!(pend && pend.area));
 
-    // hmyz
-    const tokens = $('tokens');
-    tokens.innerHTML = '';
+    // krátké bliknutí pole, kam právě přiletěl hmyz
+    const ev = game.lastEvent;
+    const evKey = ev ? FL.key(ev.r, ev.c) : null;
+    if (evKey !== lastFlash) {
+      if (lastFlash && cellEls[lastFlash]) cellEls[lastFlash].classList.remove('flash');
+      if (evKey && cellEls[evKey]) {
+        const e = cellEls[evKey];
+        e.classList.remove('flash');
+        void e.offsetWidth;                   // restart animace
+        e.classList.add('flash');
+      }
+      lastFlash = evKey;
+    }
+  }
+
+  function renderBugs() {
+    const box = $('bugs');
+    box.innerHTML = '';
     Object.keys(game.insects).forEach(k => {
       const { r, c } = FL.parseKey(k);
       const stack = game.insects[k];
       const kinds = FL.INSECT_KEYS.filter(t => stack[t] > 0);
       if (!kinds.length) return;
-      const box = el('div', 'bugs');
-      box.style.left = pctX(c) + '%';
-      box.style.top = (pctY(r) + 2.4) + '%';
-      // šířka je v % vůči plánu, uvnitř se ikony dělí rovným dílem
-      box.style.width = Math.min(CELL_PCT * 0.95, CELL_PCT * 0.5 * kinds.length) + '%';
+      const g = el('div', 'bugs-group');
+      g.style.left = pctX(c) + '%';
+      g.style.top = (pctY(r) + 2.4) + '%';
+      g.style.width = Math.min(CELL_PCT * 0.95, CELL_PCT * 0.5 * kinds.length) + '%';
       kinds.forEach(t => {
         const b = el('div', 'bug');
         b.innerHTML = `<img src="${FL.INSECTS[t].img}" alt="${FL.INSECTS[t].name}">`;
         if (stack[t] > 1) b.append(el('span', 'n', '×' + stack[t]));
-        box.append(b);
+        g.append(b);
       });
-      tokens.append(box);
-    });
-
-    // žáby (rozprostřeme je, pokud jich na poli stojí víc)
-    const byCell = {};
-    game.players.forEach(p => {
-      const k = FL.key(p.pos.r, p.pos.c);
-      (byCell[k] = byCell[k] || []).push(p);
-    });
-    Object.keys(byCell).forEach(k => {
-      const { r, c } = FL.parseKey(k);
-      const group = byCell[k];
-      group.forEach((p, i) => {
-        const off = group.length > 1 ? (i - (group.length - 1) / 2) * 2.2 : 0;
-        const f = el('div', 'frog' + (p === game.player ? ' active' : ''));
-        f.style.left = (pctX(c) + off) + '%';
-        f.style.top = (pctY(r) - 1.4) + '%';
-        f.style.width = CELL_PCT * 0.82 + '%';
-        f.style.color = FL.FROG_COLORS[p.idx];
-        f.innerHTML = `<img src="${FL.FROG_IMG(p.idx)}" alt="${p.name}">` +
-          `<span class="tag">${escapeHtml(p.name)}</span>`;
-        $('tokens').append(f);
-      });
+      box.append(g);
     });
   }
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, ch =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  /* Žáby jsou trvalé elementy – změna pozice se animuje jako skok. */
+  function renderFrogs() {
+    const layer = $('frogs');
+    const groups = {};
+    game.players.forEach(p => {
+      if (!p.pos) return;
+      const k = FL.key(p.pos.r, p.pos.c);
+      (groups[k] = groups[k] || []).push(p);
+    });
+
+    game.players.forEach(p => {
+      let f = frogEls[p.id];
+      if (!f) {
+        f = el('div', 'frog');
+        f.style.width = CELL_PCT * 0.82 + '%';
+        f.style.color = FL.FROG_COLORS[p.idx];
+        f.innerHTML = `<img src="${FL.FROG_IMG(p.idx)}" alt="${esc(p.name)}">` +
+          `<span class="tag">${esc(p.name)}</span>`;
+        frogEls[p.id] = f;
+        layer.append(f);
+      }
+      if (!p.pos) { f.classList.add('hidden'); return; }
+      f.classList.remove('hidden');
+
+      const k = FL.key(p.pos.r, p.pos.c);
+      const group = groups[k];
+      const i = group.indexOf(p);
+      const off = group.length > 1 ? (i - (group.length - 1) / 2) * 2.4 : 0;
+      const left = pctX(p.pos.c) + off, top = pctY(p.pos.r) - 1.4;
+
+      if (lastPos[p.id] !== left + ':' + top) {
+        if (lastPos[p.id] !== undefined) {
+          f.classList.remove('hop');
+          void f.offsetWidth;
+          f.classList.add('hop');
+        }
+        lastPos[p.id] = left + ':' + top;
+      }
+      f.style.left = left + '%';
+      f.style.top = top + '%';
+      f.classList.toggle('active', p === game.actor);
+      f.style.zIndex = p === game.actor ? 5 : 2;
+    });
   }
 
   // ================== PANELY ==================
+  let diceAnim = null;
+
   function renderSide() {
-    const p = game.winner || game.player;
-    $('turnFrog').style.background = FL.FROG_COLORS[p.idx];
-    $('turnName').textContent = p.name;
-    $('turnCredits').textContent = game.credits(p) + ' kr.';
+    const actor = game.winner || game.actor;
+    $('turnFrog').style.background = FL.FROG_COLORS[actor.idx];
+    $('turnName').textContent = actor.name;
+    $('turnCredits').textContent = game.credits(actor) + ' kr.';
+    $('roundNo').textContent = game.phase === 'setup' ? 'Rozmístění' : 'Kolo ' + game.round;
+
+    const interrupted = !game.winner && game.interrupted;
+    $('interrupt').classList.toggle('hidden', !interrupted);
+    if (interrupted) $('interrupt').textContent =
+      `Tah hráče ${game.player.name} je přerušen – rozhoduje ${actor.name}.`;
 
     $('hint').textContent = game.winner
       ? '🏆 ' + game.winner.name + ' vyhrál!'
       : (game.pending ? game.pending.hint : hintForPhase());
 
-    // kostky
-    const d = $('dice');
-    d.innerHTML = '';
-    if (game.dice) {
-      const { d10, black, white } = game.dice;
-      d.append(die('D10 – událost', d10 === 10 ? '10/0' : d10, ''));
-      d.append(die('černá – řádek', black, 'black'));
-      d.append(die('bílá – sloupec', white, 'white'));
-    }
-
+    renderDice();
     renderActions();
+    renderInsectBar();
     renderHand();
     renderPlayers();
     renderLog();
+    $('deckInfo').textContent = `Balíček ${game.deck.length} · odhozeno ${game.discard.length}`;
+
+    if (game.winner) showWinModal();
+  }
+
+  function renderDice() {
+    const d = $('dice');
+    if (!game.dice) { d.innerHTML = ''; d.dataset.sig = ''; return; }
+    const { d10, black, white } = game.dice;
+    const sig = [d10, black, white, game.round, game.cur].join('|');
+    const fresh = d.dataset.sig !== sig;
+    d.dataset.sig = sig;
+
+    if (fresh) {
+      d.innerHTML = '';
+      d.append(die('D10 – událost', '?', ''), die('černá – řádek', '?', 'black'), die('bílá – sloupec', '?', 'white'));
+      const vals = d.querySelectorAll('.die b');
+      d.classList.add('rolling');
+      clearInterval(diceAnim);
+      let ticks = 0;
+      diceAnim = setInterval(() => {
+        ticks++;
+        if (ticks > 7) {
+          clearInterval(diceAnim);
+          d.classList.remove('rolling');
+          vals[0].textContent = d10 === 10 ? '10/0' : d10;
+          vals[1].textContent = black;
+          vals[2].textContent = white;
+          return;
+        }
+        vals[0].textContent = 1 + Math.floor(Math.random() * 10);
+        vals[1].textContent = 1 + Math.floor(Math.random() * 12);
+        vals[2].textContent = 1 + Math.floor(Math.random() * 12);
+      }, 55);
+    }
   }
 
   function die(label, val, cls) {
@@ -188,7 +259,7 @@
 
   function hintForPhase() {
     switch (game.phase) {
-      case 'roll': return 'Hoď kostkami (D10 + černá D12 + bílá D12).';
+      case 'roll': return 'Hoď kostkami: D10 určí událost, černá D12 řádek a bílá D12 sloupec.';
       case 'done': return 'Tah je u konce – předej hru dalšímu hráči.';
       default: return '';
     }
@@ -199,69 +270,71 @@
     a.innerHTML = '';
 
     if (game.winner) {
-      const b = el('button', 'primary', 'Nová hra');
-      b.onclick = () => location.reload();
-      a.append(b);
+      a.append(mkBtn('Nová hra', 'primary', () => location.reload()));
+      return;
+    }
+
+    if (game.phase === 'setup') {
+      a.append(mkBtn('🎲 Rozmístit náhodně', null, () => game.randomStarts()));
       return;
     }
 
     const pend = game.pending;
     if (pend && pend.kind === 'choice') {
-      pend.options.forEach((o, i) => {
-        const b = el('button', 'primary', escapeHtml(o.label));
-        b.onclick = () => game.pickOption(i);
-        a.append(b);
-      });
+      pend.options.forEach((o, i) => a.append(mkBtn(o.label, 'primary', () => game.pickOption(i))));
       return;
     }
 
-    if (game.phase === 'roll') {
-      const b = el('button', 'primary', '🎲 Hoď kostkami');
-      b.onclick = () => game.rollDice();
-      a.append(b);
-    }
+    if (game.phase === 'roll' && !pend) a.append(mkBtn('🎲 Hoď kostkami', 'primary', () => game.rollDice()));
+    if (game.canLeap()) a.append(mkBtn(`🌸 VELESKOK (−${game.settings.leapPrice} kr.)`, 'primary leap', () => game.doLeap()));
+    if (game.phase === 'done') a.append(mkBtn('Další hráč ▶', 'primary', () => game.nextPlayer()));
+    if (pend && pend.cancel) a.append(mkBtn('Zrušit', 'ghost', () => game.cancelPending()));
+  }
 
-    if (game.canLeap()) {
-      const b = el('button', 'primary',
-        `🌸 VELESKOK (−${game.settings.leapPrice} kr.)`);
-      b.onclick = () => game.doLeap();
-      a.append(b);
-    }
+  function mkBtn(label, cls, fn) {
+    const b = el('button', cls, esc(label));
+    b.onclick = fn;
+    return b;
+  }
 
-    if (game.canTradeFirefly()) {
-      const b = el('button', null, '🪲 Světluška → moucha od hráče');
-      b.title = 'Vrať světlušku do banku a vezmi si 1 mouchu od jiného hráče.';
-      b.onclick = () => game.tradeFirefly();
-      a.append(b);
-    }
+  /* Lišta s hmyzem hráče na tahu + výměny v banku (pravidlo 6). */
+  function renderInsectBar() {
+    const bar = $('insectBar');
+    bar.innerHTML = '';
+    if (game.phase === 'setup' || game.winner) return;
+    const p = game.actor;   // shodně s hlavičkou panelu
 
-    if (game.phase === 'done') {
-      const b = el('button', 'primary', 'Další hráč ▶');
-      b.onclick = () => game.nextPlayer();
-      a.append(b);
-    }
+    FL.INSECT_KEYS.forEach(t => {
+      const item = el('div', 'ins');
+      item.title = `${FL.INSECTS[t].name} – ${FL.INSECTS[t].value} kr.`;
+      item.innerHTML = `<img src="${FL.INSECTS[t].img}" alt=""><b>${p.insects[t]}</b>`;
+      bar.append(item);
+    });
 
-    if (pend && pend.cancel) {
-      const b = el('button', 'ghost', 'Zrušit');
-      b.onclick = () => game.cancelPending();
-      a.append(b);
-    }
+    const tools = el('div', 'ins-tools');
+    if (game.canExchange('split'))
+      tools.append(mkBtn('Vážka → 2 mouchy', 'mini', () => game.exchange('split')));
+    if (game.canExchange('merge'))
+      tools.append(mkBtn('2 mouchy → vážka', 'mini', () => game.exchange('merge')));
+    if (game.canTradeFirefly())
+      tools.append(mkBtn('Světluška → moucha od hráče', 'mini', () => game.tradeFirefly()));
+    if (tools.children.length) bar.append(tools);
   }
 
   function renderHand() {
     const h = $('hand');
     h.innerHTML = '';
     const p = game.player;
+    $('handOwner').textContent = p.name;
     p.hand.forEach(card => {
       const def = FL.CARD_BY_ID[card.id];
       const c = el('div', 'card' + (def.passive ? ' passive' : ''));
       c.style.setProperty('--cc', def.color);
-      c.innerHTML = `<b>${escapeHtml(def.name)}</b>` +
+      c.innerHTML = `<b>${esc(def.name)}</b>` +
         (def.passive ? '<small>pasivní</small>' : '<small>klikni = sešli</small>');
       c.title = def.text;
       c.onclick = () => {
-        if (def.passive) showModal(`<h2>${escapeHtml(def.name)}</h2><p>${escapeHtml(def.text)}</p>
-          <p class="note">Pasivní kouzlo se použije automaticky, jakmile nastane situace, na kterou reaguje.</p>`);
+        if (def.passive || !game.canPlayCard()) showCardModal(def);
         else game.playCard(card.uid);
       };
       h.append(c);
@@ -275,16 +348,18 @@
     const pickable = pend && pend.kind === 'player' ? new Set(pend.players) : null;
 
     game.players.forEach(p => {
-      const row = el('div', 'prow' + (p === game.player ? ' active' : '') +
+      const row = el('div', 'prow' +
+        (p === game.player ? ' active' : '') +
+        (p === game.actor && game.interrupted ? ' deciding' : '') +
         (pickable && pickable.has(p.id) ? ' pickable' : ''));
       const dot = el('span', 'frog-dot');
       dot.style.background = FL.FROG_COLORS[p.idx];
-      const pos = FL.inLake(p.pos.r, p.pos.c) ? `${p.pos.r}-${p.pos.c}` : 'břeh';
+      const pos = p.pos ? (FL.inLake(p.pos.r, p.pos.c) ? `${p.pos.r}-${p.pos.c}` : 'břeh') : '–';
       row.append(dot);
-      row.append(el('span', 'nm', escapeHtml(p.name) + (p.skipTurn ? ' 💤' : '')));
+      row.append(el('span', 'nm', esc(p.name) + (p.skipTurn ? ' 💤' : '')));
       row.append(el('span', 'pos', pos));
       row.append(el('span', 'cr', game.credits(p) + ' kr.'));
-      row.append(el('span', 'cards-n', p.hand.length + ' kouzel'));
+      row.append(el('span', 'cards-n', p.hand.length + '×'));
       if (pickable && pickable.has(p.id)) row.onclick = () => game.pickPlayer(p.id);
       wrap.append(row);
     });
@@ -293,35 +368,60 @@
   function renderLog() {
     const l = $('log');
     l.innerHTML = '';
-    game.logLines.forEach(line => l.append(el('div', line.cls, escapeHtml(line.msg))));
+    game.logLines.forEach(line => l.append(el('div', line.cls, esc(line.msg))));
   }
 
   function render() {
-    renderBoard();
+    renderCells();
+    renderBugs();
+    renderFrogs();
     renderSide();
   }
 
-  // ================== MODÁL ==================
+  // ================== MODÁLY ==================
   function showModal(html) {
     $('modalBody').innerHTML = html;
     $('modal').classList.remove('hidden');
   }
+  function hideModal() { $('modal').classList.add('hidden'); }
+
+  function showCardModal(def) {
+    showModal(`<h2>${esc(def.name)}</h2><p>${esc(def.text)}</p>` +
+      (def.passive ? '<p class="note">Pasivní kouzlo – hra se sama zeptá, až nastane situace, na kterou reaguje.</p>' : ''));
+  }
+
+  let winShown = false;
+  function showWinModal() {
+    if (winShown) return;
+    winShown = true;
+    const w = game.winner;
+    showModal(
+      `<div class="win-box">
+         <img src="${FL.FROG_IMG(w.idx)}" alt="" class="win-frog">
+         <h2>🏆 ${esc(w.name)} vyhrává!</h2>
+         <p>Veleskok za ${game.settings.leapPrice} kreditů vyšel – Kouzelný leknín 6-6 je dobyt.</p>
+         <p class="note">Kolo ${game.round} · zbývající kredity ${game.credits(w)}</p>
+       </div>`);
+  }
 
   function legendHtml() {
     const rows = [
-      ['Start', 'Odkud žáby vyrážejí; sem se vracíš po pádu do vody nebo po útoku.'],
+      ['Start', 'Odkud žáby vyrážejí; sem se vracíš po pádu do vody nebo po útoku. Pole si vždy vybíráš sám.'],
       ['Břeh / Leknín', 'Běžné pole bez zvláštního účinku.'],
       ['Houba', 'Líznutí svrchní karty z balíčku kouzel.'],
       ['Voda', 'Žába se okamžitě vrací na libovolný volný START.'],
-      ['Vodní vír', 'Přenese žábu o 2 pole ve směru jedné z dostupných šipek.'],
+      ['Vodní vír', 'Přenese žábu o 2 pole ve směru jedné z dostupných šipek. Najeď myší na vír a uvidíš je.'],
       ['Velký leknín', 'Pole 4-4, 4-6, 4-8, 6-4, 6-8, 8-4, 8-6, 8-8 – jen odsud lze provést veleskok.'],
       ['Kouzelný leknín', 'Vítězné pole 6-6. Dosáhneš ho jen zaplaceným veleskokem.']
     ];
     return '<h2>Legenda plánu</h2><div class="legend">' +
       rows.map(r => `<div><b>${r[0]}</b> – ${r[1]}</div>`).join('') +
-      '</div><h2 style="margin-top:1rem">Hmyz</h2><div class="legend">' +
-      '<div><b>Moucha</b> – 1 kredit</div><div><b>Světluška</b> – 1 kredit</div>' +
-      '<div><b>Vážka</b> – 2 kredity</div></div>';
+      '</div><h2 style="margin-top:1rem">Hmyz a kredity</h2><div class="legend">' +
+      '<div><b>Moucha</b> – 1 kredit</div><div><b>Světluška</b> – 1 kredit, nebo ji vrať do banku a vezmi si mouchu od jiného hráče</div>' +
+      '<div><b>Vážka</b> – 2 kredity, v banku ji lze měnit za 2 mouchy</div></div>' +
+      '<h2 style="margin-top:1rem">Ovládání</h2><div class="legend">' +
+      '<div><b>Mezerník</b> – hlavní akce (hod kostkami / další hráč)</div>' +
+      '<div><b>Esc</b> – zavřít okno nebo zrušit zaměřování kouzla</div></div>';
   }
 
   // ================== START ==================
@@ -331,9 +431,20 @@
     $('startBtn').addEventListener('click', startGame);
     $('restartBtn').addEventListener('click', () => location.reload());
     $('rulesBtn').addEventListener('click', () => showModal(legendHtml()));
-    $('modalClose').addEventListener('click', () => $('modal').classList.add('hidden'));
-    $('modal').addEventListener('click', e => {
-      if (e.target === $('modal')) $('modal').classList.add('hidden');
+    $('modalClose').addEventListener('click', hideModal);
+    $('modal').addEventListener('click', e => { if (e.target === $('modal')) hideModal(); });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        if (!$('modal').classList.contains('hidden')) return hideModal();
+        if (game && game.pending && game.pending.cancel) game.cancelPending();
+        return;
+      }
+      if (e.key === ' ' && game && $('modal').classList.contains('hidden')) {
+        if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+        const b = $('actions').querySelector('button.primary');
+        if (b) { e.preventDefault(); b.click(); }
+      }
     });
   });
 })();

@@ -46,7 +46,8 @@
         <div id="board">
           <img id="boardImg" src="images/board.jpeg" alt="Herní plán Žabí jezero">
           <div id="cells"></div>
-          <div id="tokens"></div>
+          <div id="bugs" class="layer"></div>
+          <div id="frogs" class="layer"></div>
         </div>
       </div>
     </div>
@@ -57,15 +58,19 @@
           <span id="turnFrog" class="frog-dot"></span>
           <strong id="turnName">–</strong>
           <span id="turnCredits" class="credits">0 kr.</span>
+          <span id="roundNo" class="round">–</span>
         </div>
+        <div id="interrupt" class="interrupt hidden"></div>
         <div id="hint" class="hint">–</div>
         <div id="dice" class="dice"></div>
         <div id="actions" class="actions"></div>
+        <div id="insectBar" class="insect-bar"></div>
       </div>
 
       <div class="panel">
-        <h2>Kouzla v ruce</h2>
+        <h2>Kouzla v ruce – <span id="handOwner">–</span></h2>
         <div id="hand" class="hand"></div>
+        <div id="deckInfo" class="deck-info"></div>
       </div>
 
       <div class="panel">
@@ -78,8 +83,8 @@
         <div id="log" class="log"></div>
       </div>
 
-      <div class="panel">
-        <button id="rulesBtn" class="ghost">Legenda plánu</button>
+      <div class="panel btn-row">
+        <button id="rulesBtn" class="ghost">Legenda a ovládání</button>
         <button id="restartBtn" class="ghost">Nová hra</button>
       </div>
     </aside>

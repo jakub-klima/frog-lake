@@ -138,6 +138,15 @@
     return tiles;
   };
 
+  FL.arrowGlyph = function (dr, dc) {
+    const m = {
+      '-1,-1': '↖', '-1,0': '↑', '-1,1': '↗',
+      '0,-1': '←', '0,1': '→',
+      '1,-1': '↙', '1,0': '↓', '1,1': '↘'
+    };
+    return m[dr + ',' + dc] || '→';
+  };
+
   FL.inBoard = (r, c) => r >= 0 && c >= 0 && r < FL.SIZE && c < FL.SIZE;
   FL.inLake = (r, c) =>
     r >= FL.LAKE_MIN && r <= FL.LAKE_MAX && c >= FL.LAKE_MIN && c <= FL.LAKE_MAX;

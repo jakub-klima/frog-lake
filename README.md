@@ -45,8 +45,15 @@ Typy polí byly odečteny přímo z obrázku plánu:
 5 a 7 každé hrany mají tři šipky (rovně + obě úhlopříčky) a vír uprostřed hrany
 (pozice 6) jednu šipku rovně. Vír vždy přenáší o 2 pole.
 
+Engine vyhodnocuje dopad skoku jako řetěz pokračování, takže se hra umí
+uprostřed tahu zeptat i **jiného hráče, než kdo je právě na tahu** – typicky
+„chceš použít Helmu?" nebo „vyber si volný START". Kdo právě rozhoduje, hlásí
+červený pruh v panelu i orámování v seznamu hráčů.
+
 ## Co je hotové
 
+* Rozmístění na začátku: každý hráč si sám klikne své startovní pole
+  (nebo tlačítko „Rozmístit náhodně").
 * Tah: hod D10 + černá D12 + bílá D12, vyhodnocení události, skok, konec tahu.
 * Události: moucha (1-3), světluška (4-6), vážka (7-9), Vodník Lojzík (10/0).
 * Kostky D12 – hodnoty 1–11 adresují pole; při **12** si hráč vybírá řádek /
@@ -55,6 +62,8 @@ Typy polí byly odečteny přímo z obrázku plánu:
   (moucha 1, světluška 1, vážka 2) včetně rozměňování vážky.
 * Pole: Voda (návrat na volný START), Vodní vír (výběr šipky, přesun o 2),
   Houba (líznutí kouzla), Start, Břeh/Leknín, Velký leknín, Kouzelný leknín.
+* Návrat na START si vždy vybírá postižený hráč – po pádu do vody i po zásahu
+  Volavkou, Štikou nebo Žabijákem.
 * Skok na hlavu: sebrání 1 kreditu, následné sklouznutí na sousední pole
   (může řetězit další interakce), každý hráč nejvýše jednou za kolo.
 * Veleskok: jen z velkého leknínu, za nastavenou cenu (výchozí 10 kreditů) →
@@ -62,10 +71,15 @@ Typy polí byly odečteny přímo z obrázku plánu:
 * Všech **32 karet kouzel** včetně balíčku, odhazovacího balíčku a jeho
   zamíchání po dobrání. Kouzlo lze seslat i uprostřed vlastního tahu –
   nabídka skoku se poté přepočítá.
-* Pasivní kouzla (Bublina, Helma, Plováky, Kvákrobatika) se spouštějí sama,
-  když nastane situace, na kterou reagují.
+* Pasivní kouzla (Bublina, Helma, Plováky, Kvákrobatika) se v pravou chvíli
+  nabídnou **svému majiteli**, který se rozhodne, zda je použije. Kvákrobatika
+  navíc nechá uskočit na vybrané sousední pole.
 * Světluška: vrácení do banku výměnou za 1 mouchu od jiného hráče.
-* Zápis hry, přehled hráčů, legenda plánu.
+  Vážka se v banku mění za 2 mouchy a zpět.
+* Zápis hry, přehled hráčů, počítadlo balíčku a kola, legenda plánu.
+* Animace skoků a hodu kostkami, zvýraznění pole, kam přiletěl hmyz, výherní
+  obrazovka, ovládání mezerníkem a Esc, rozvržení pro mobil. Animace respektují
+  systémové nastavení „omezit pohyb".
 
 ## Vědomá zjednodušení prototypu
 
@@ -78,20 +92,20 @@ prototyp udělal a která je dobré potvrdit nebo změnit:
    jen na Kouzelný leknín 6-6 se neumisťuje. Hmyz z vody sebereš, ale pak tě
    voda pošle na START.
 3. **Volavka a Štika** nezasahují sesílajícího hráče.
-4. **Kvákrobatika** se u napadeného hráče použije automaticky (nikdo se neptá,
-   zda si ji chce nechat) a uskočí na náhodné volné sousední pole.
+4. **Kvákrobatika** dovolí uskočit jen na volné sousední pole, které není voda –
+   uskočená žába pak neřeší účinek pole, kam dopadla.
 5. **Černá magie** bere náhodnou kartu z ruky soupeře (ruce jsou v hot-seatu
    stejně skryté).
-6. **Bahno a Trampolína** jsou v enginu implementované, ale na tomto plánu se
+6. **Vážka ↔ mouchy** se v banku mění v poměru 1 : 2, tedy podle hodnoty
+   v kreditech. Pravidla poměr výslovně neurčují.
+7. **Bahno a Trampolína** jsou v enginu implementované, ale na tomto plánu se
    žádné takové pole nevyskytuje.
-7. Veleskok je po zaplacení **vždy úspěšný** (pravidla mluví o „úspěšném
+8. Veleskok je po zaplacení **vždy úspěšný** (pravidla mluví o „úspěšném
    doskočení“, ale test úspěchu nespecifikují).
-8. Startovní pole se přidělují na začátku hry automaticky po pořadí.
 
 ## Co ještě chybí
 
-* Volba startovního pole na začátku hry a volná výměna vážek za mouchy
-  „ve stanoveném poměru“ (poměr pravidla neurčují).
-* Ruce hráčů jsou v hot-seatu vidět všem – chybí režim se skrýváním karet.
+* Ruce hráčů jsou v hot-seatu vidět všem – chybí obrazovka „předej zařízení“
+  se skrýváním karet.
 * Žádný počítačový protihráč, žádná hra po síti, žádné ukládání rozehrané hry.
-* Zvuk a animace skoků.
+* Zvuky.
