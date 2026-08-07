@@ -1,0 +1,154 @@
+ŽABÍ JEZERO®
+PRAVIDLA HRY
+Vítejte u Žabího Jezera!
+V Žabím Jezeře se až osm odvážných žab vydává na závod ke Kouzelnému leknínu. Cestou sbírají hmyz, kouzlí, využívají sílu jezera a občas skočí někomu přímo na hlavu.
+Každá hra je jiná. O vítězství rozhoduje strategie, taktika, štěstí i správný odhad okamžiku.
+První žába, která úspěšně skočí na Kouzelný leknín, vítězí!
+
+1. PŘÍPRAVA HRY
+1. Rozložte herní plán.
+2. Připravte bank. Připravte kostky barevnou D10, černou D12 a bílou D12.
+3. Připravte karty kouzel a figurky žab.
+4. Každý hráč si vezme svou žábu a odpovídající tácek na kredity.
+5. Zvolte hráče, který začne. Začínajícího hráče lze určit dohodou nebo hodem kostkou.
+Hráči mohou současně zastávat roli bankéře a spravovat společnou zásobu kreditů a herních prvků.
+
+2. PRŮBĚH HRY
+Hraje se po směru hodinových ručiček.
+Ve svém tahu hráč:
+1. Hodí kostkami
+2. Vyhodnotí událost a případně umístí hmyz na herní plán.
+3. Provede svůj skok nebo jiný dostupný pohyb případně sebere kredity nebo kouzlo z herních polí, které prošel.
+4. Může během hry využít kouzlo podle jeho pravidel.
+5. Poté pokračuje další hráč. 
+
+3. KOSTKY A UDÁLOSTI
+Hráč hodi D10 + černou D12 + bílou D12.
+
+D10 určuje událost:
+Hod
+Událost
+1-3
+Umisti 1 mouchu na určené pole.
+4-6
+Umisti 1 světlušku na určené pole.
+7-9
+Umisti 1 vážku na určené pole.
+10/0 Umisti Vodnika Lojzika - teleportuj svou žábu na libovolné pole kromě Kouzelného leknínu.
+
+D12 určují místo události
+* Černá D12 určuje řádek.
+* Bílá D12 určuje sloupec.
+* Používají se hodnoty 1-11.
+* Pokud padne 12, hráč si pro danou situaci zvolí libovolné číslo.
+Pokud padnou dvě 12, hráč si pro danou situaci zvolí libovolné pole na
+herním plánu.
+
+4. POHYB ŽAB
+Každý hráč se ve svém tahu musí pohnout vyjma jednoho kola po skoku do bahna.
+Základní skok
+Žába skočí na jedno sousední pole:
+* vodorovně,
+* svisle,
+* nebo diagonálně.
+Kromě základního skoku může hráč využít také speciální pohyb způsobený herním plánem, kouzlem nebo interakcí s jiným hráčem.
+
+5. POLE HERNÍHO PLÁNU
+START
+Místo, odkud žáby začínají hru. Při začátku hry nebo návratu na start si hráč vybere libovolné volné startovní pole.
+BŘEH
+Běžné pole bez zvláštního účinku.
+LEKNÍN
+Běžné pole bez zvláštního účinku.
+VODA
+Žába, která skočí do vody, se okamžitě vrací na libovolný volný START.
+VODNÍ VÍR
+Žába je okamžitě přenesena o 2 pole podle směru jedné z dostupných šipek. Hráč si vybere, kterou šipku využije.
+TRAMPOLÍNA
+Žába se okamžitě posune o 3 pole ve směru šipky podle svého výběru.
+HOUBA
+Hráč si vezme 1 svrchní kartu z balíčku kouzelných karet. Po dobrání poslední karty se zbylé karty zamíchají a dají opět k dispozici.
+BAHNO
+Hráč ztrácí svůj následující tah. V tomto kole neprovádí hod kostkami ani svůj skok.
+KOUZELNÝ LEKNÍN
+Vítězné pole, centrální bod jezera. Nachází se na souřadnicích 6-6.
+
+6. KREDITY A HMYZ
+Hmyz představuje herní kredity:
+Moucha = 1 kredit
+Světluška = 1 kredit
+*Vážka = 2 kredity
+Kredity lze získávat, utrácet, krást nebo ztrácet podle pravidel hry a účinků kouzel.
+Vážky a mouchy lze během hry měnit ve stanoveném poměru.
+Světluška
+Světlušku si hráč může:
+ponechat jako 1 kredit, nebo
+vrátit do banku a vzít si 1 mouchu od jiného hráče.
+
+7. VELESKOK NA KOUZELNÝ LEKNÍN
+Na Kouzelný leknín Ize zvítězit pouze veleskokem
+Veleskok lze provést z jednoho z těchto osmi velkých leknínů:
+4-4, 4-6, 4-8, 6-4, 6-8,8-4, 8-6, 8-8
+Cena veleskoku se určuje před začátkem hry.
+Doporučená cena je 10 kreditů.
+Hráči se mohou podle zvoleného herního režimu dohodnout na jiné ceně - například nižší pro rychlou hru nebo vyšší pro náročnější či týmovou hru.
+Hráč musí mít dostatek kreditů, cenu veleskoku zaplatit a úspěšně doskočit na Kouzelný leknín.
+Kdo tam doskočí jako první, vyhrává hru.
+
+8. SKOK NA HLAVU
+Pokud hráč skočí na pole obsazené jiným hráčem:
+1. sebere mu 1 kredit,
+2. poté sklouzne na libovolné sousední pole.
+Toto sklouznutí může způsobit další interakci s jiným hráčem.
+Každého konkrétního hráče Ize během jednoho kola skočit maximálně jednou.
+
+9. KOUZLA
+Kouzla lze používat kdykoli během hry, pokud jejich účinek neurčuje jinak.
+Každé kouzlo je jednorázové. Po aktivaci se karta odhodí.
+Kartu kouzla získá hráč například na poli Houba.
+VOLAVKA x1
+Útok volavky zasáhne oblast 5 x 5 polí. Zasažení hráči se vrátí na START. Hráč, který kouzlo aktivoval, získává veškerý hmyz nacházející se v zasažené oblasti.
+ŠTIKA x2
+Útok štiky zasáhne oblast 3 x 3 polí. Zasažení hráči se vrátí na START. Hráč, který kouzlo aktivoval, získává veškerý hmyz nacházející se v zasažené oblasti.
+HURIKÁN *1
+Všichni hráči si předají své karty kouzel v ruce o jednoho hráče po směru hodinových ručiček.
+TAJFUN *1
+Všichni hráči si předají své karty kouzel v ruce o jednoho hráče proti směru hodinových ručiček.
+ČERNÁ RUKA *2
+Vezmi si 1 kus hmyzu od libovolného hráče.
+ČERNÁ MAGIE *2
+Vezmi si 1 kartu kouzla od libovolného hráče.
+VYSTŘELOVACÍ JAZYK *2
+Seber kredity z jednoho sousedního pole.
+BUBLINA *2
+Jednou tě ochrání před útokem Štiky nebo Volavky.
+HELMA x2
+Jednou tě ochrání před ztrátou 1 kreditu, když ti jiný hráč skočí na hlavu.
+ZLATÁ MUŠKA *2
+Vezmi si 1 mouchu z banku.
+ZÁŘIVÁ SVĚTLUŠKA >2
+Vezmi si 1 světlušku z banku.
+DUHOVÁ VÁŽKA *1
+Vezmi si 1 vážku z banku.
+ZÁMĚNA ×2
+Prohod si místo, souřadnice, s hráčem, na
+kterého ukážeš.
+PLOVÁKY x2
+Když tě má Vodní vír přemístit, můžeš zůstat jedno kolo na svém současném poli.
+KVÁKROBATRIKA *2
+Když na tebe jiný hráč útočí, můžeš okamžitě uskočit o 1 pole v libovolném směru a vyhnout se následkům skoku.
+KRAKEN ×1
+Všichni ostatní hráči odevzdají 1 kredit do banku.
+EKO KATASTROFA *1
+Veškerý hmyz umístěný na herním plánu okamžitě zmizí. Hmyz, který již vlastní hráči, zůstává nedotčen.
+ŽABIJÁK x4
+Každá žába, na jejíž hlavu v tomto kole skočíš, se okamžitě vrací na START.
+
+10) ❤️ VÍTĚZSTVÍ
+Vítězem se stává první hráč, který:
+1. získá potřebný počet kreditů,
+2. provede veleskok z velkého leknínu,
+3. úspěšně doskočí na Kouzelný leknín.
+
+Příjemnou žábavu,
+Žabi Jezero(R)
