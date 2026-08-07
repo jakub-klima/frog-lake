@@ -1,11 +1,101 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="cs">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hello World</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Žabí jezero – prototyp</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🐸</text></svg>">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h1>Hello, World!</h1>
+
+<!-- ================= NASTAVENÍ HRY ================= -->
+<div id="setup" class="screen">
+  <div class="setup-card">
+    <h1>Žabí jezero<span class="reg">®</span></h1>
+    <p class="tagline">Závod ke Kouzelnému leknínu – digitální prototyp pravidel.</p>
+
+    <label class="field">
+      <span>Počet hráčů</span>
+      <select id="playerCount">
+        <option>2</option><option selected>3</option><option>4</option>
+        <option>5</option><option>6</option><option>7</option><option>8</option>
+      </select>
+    </label>
+
+    <div id="nameFields" class="names"></div>
+
+    <label class="field">
+      <span>Cena veleskoku (kredity)</span>
+      <input id="leapPrice" type="number" min="1" max="40" value="10">
+    </label>
+
+    <button id="startBtn" class="primary big">Začít hru</button>
+
+    <p class="note">Hraje se na jednom zařízení (hot-seat). Klikáním na zvýrazněná pole
+      provádíš skoky, kouzla najdeš v pravém panelu.</p>
+  </div>
+</div>
+
+<!-- ================= HRA ================= -->
+<div id="game" class="screen hidden">
+  <div class="layout">
+
+    <div class="board-col">
+      <div id="boardWrap">
+        <div id="board">
+          <img id="boardImg" src="images/board.jpeg" alt="Herní plán Žabí jezero">
+          <div id="cells"></div>
+          <div id="tokens"></div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="panel turn-panel">
+        <div class="turn-head">
+          <span id="turnFrog" class="frog-dot"></span>
+          <strong id="turnName">–</strong>
+          <span id="turnCredits" class="credits">0 kr.</span>
+        </div>
+        <div id="hint" class="hint">–</div>
+        <div id="dice" class="dice"></div>
+        <div id="actions" class="actions"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Kouzla v ruce</h2>
+        <div id="hand" class="hand"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Hráči</h2>
+        <div id="players" class="players"></div>
+      </div>
+
+      <div class="panel log-panel">
+        <h2>Zápis hry</h2>
+        <div id="log" class="log"></div>
+      </div>
+
+      <div class="panel">
+        <button id="rulesBtn" class="ghost">Legenda plánu</button>
+        <button id="restartBtn" class="ghost">Nová hra</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ================= MODÁL ================= -->
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <button id="modalClose" class="modal-close">×</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
 </body>
 </html>
