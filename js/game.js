@@ -465,6 +465,11 @@
             () => this.askWhirlDir(p, t));
           return;
 
+        case T.TRAMPOLINE:
+          this.log(`${p.name} dopadl na Trampolínu.`, 'event');
+          this.askTrampolineDir(p, t);
+          return;
+
         case T.MUSHROOM:
           this.log(`${p.name} přistál na Houbě.`, 'card');
           this.drawCard(p);
@@ -497,6 +502,24 @@
       this.askChoice(p.id, 'Vodní vír tě přenese o 2 pole – vyber šipku.', options, v => {
         this.pending = null;
         this.log(`Vír unáší hráče ${p.name} na ${this.coord(v[0], v[1])}.`, 'move');
+        this.moveTo(p, v[0], v[1]);
+      });
+    }
+
+    /* 5) Trampolína: žába se okamžitě posune o 3 pole ve směru šipky dle výběru. */
+    askTrampolineDir(p, t) {
+      const step = FL.TRAMPOLINE_STEP;
+      const options = t.dirs
+        .map(([dr, dc]) => [p.pos.r + dr * step, p.pos.c + dc * step, dr, dc])
+        .filter(([r, c]) => FL.inBoard(r, c))
+        .map(([r, c, dr, dc]) => ({
+          label: `${FL.arrowGlyph(dr, dc)} na pole ${this.coord(r, c)}`, value: [r, c]
+        }));
+      if (!options.length) { this.log('Trampolína nemá kam odpálit.', 'sys'); return this.endTurn(); }
+      this.phase = 'trampoline';
+      this.askChoice(p.id, 'Trampolína tě odpálí o 3 pole – vyber šipku.', options, v => {
+        this.pending = null;
+        this.log(`Trampolína odpaluje hráče ${p.name} na ${this.coord(v[0], v[1])}.`, 'move');
         this.moveTo(p, v[0], v[1]);
       });
     }

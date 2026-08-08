@@ -20,7 +20,7 @@
     WATER: 'water',
     WHIRL: 'whirl',
     MAGIC: 'magic',
-    TRAMPOLINE: 'trampoline', // v pravidlech je, na tomto plánu se nevyskytuje
+    TRAMPOLINE: 'trampoline',
     MUD: 'mud'                // v pravidlech je, na tomto plánu se nevyskytuje
   };
 
@@ -48,11 +48,23 @@
   };
 
   // --- pevné pozice odečtené z obrázku plánu -------------------------------
+  /* Na každé hraně břehu je pořadí polí:
+   * houba(0) – leknín(1) – břeh(2) – TRAMPOLÍNA(3) – START(4) – leknín(5) –
+   * houba(6) – leknín(7) – START(8) – TRAMPOLÍNA(9) – břeh(10) – leknín(11) – houba(12)
+   * Startovní pole je to s nápisem START, ne černý kruh trampolíny vedle něj.
+   */
   FL.STARTS = [
-    { r: 0, c: 3 }, { r: 0, c: 9 },
-    { r: 12, c: 3 }, { r: 12, c: 9 },
-    { r: 3, c: 0 }, { r: 9, c: 0 },
-    { r: 3, c: 12 }, { r: 9, c: 12 }
+    { r: 0, c: 4 }, { r: 0, c: 8 },
+    { r: 12, c: 4 }, { r: 12, c: 8 },
+    { r: 4, c: 0 }, { r: 8, c: 0 },
+    { r: 4, c: 12 }, { r: 8, c: 12 }
+  ];
+
+  const TRAMPOLINES = [
+    [0, 3], [0, 9],
+    [12, 3], [12, 9],
+    [3, 0], [9, 0],
+    [3, 12], [9, 12]
   ];
 
   const MUSHROOMS = [
@@ -111,6 +123,17 @@
   }
   FL.WHIRL_STEP = 2;
 
+  /* Šipky trampolín (oranžové oblouky na plánu):
+   * trampolína leží na břehu a její dvě šipky vedou podél břehu na obě strany,
+   * vždy o 3 pole – tedy přesně na sousední houby.
+   * Trampolína přenáší žábu o 3 pole ve zvoleném směru (pravidlo 5).
+   */
+  function trampolineDirs(r, c) {
+    const horizontal = r === 0 || r === FL.SIZE - 1;
+    return horizontal ? [[0, -1], [0, 1]] : [[-1, 0], [1, 0]];
+  }
+  FL.TRAMPOLINE_STEP = 3;
+
   // --- sestavení plánu -----------------------------------------------------
   FL.buildBoard = function buildBoard() {
     const T = FL.TILE;
@@ -132,6 +155,11 @@
       const t = tiles[key(r, c)];
       t.type = T.WHIRL;
       t.dirs = whirlDirs(r, c);
+    });
+    TRAMPOLINES.forEach(([r, c]) => {
+      const t = tiles[key(r, c)];
+      t.type = T.TRAMPOLINE;
+      t.dirs = trampolineDirs(r, c);
     });
     tiles[key(FL.MAGIC_POS.r, FL.MAGIC_POS.c)].type = T.MAGIC;
 

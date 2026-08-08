@@ -87,6 +87,8 @@
     let s = FL.TILE_NAME[t.type];
     if (FL.inLake(r, c)) s += ` ${r}-${c}`;
     if (t.type === T.WHIRL) s += ' – šipky: ' + t.dirs.map(d => FL.arrowGlyph(d[0], d[1])).join(' ');
+    if (t.type === T.TRAMPOLINE)
+      s += ' – o 3 pole, šipky: ' + t.dirs.map(d => FL.arrowGlyph(d[0], d[1])).join(' ');
     if (t.type === T.BIG) s += ' – odsud lze provést veleskok';
     return s;
   }
@@ -411,6 +413,7 @@
       ['Houba', 'Líznutí svrchní karty z balíčku kouzel.'],
       ['Voda', 'Žába se okamžitě vrací na libovolný volný START.'],
       ['Vodní vír', 'Přenese žábu o 2 pole ve směru jedné z dostupných šipek. Najeď myší na vír a uvidíš je.'],
+      ['Trampolína', 'Černý kruh v oranžovém rámu na břehu (0-3, 0-9, …). Odpálí žábu o 3 pole podél břehu ve směru vybrané šipky – tedy vždy na sousední Houbu.'],
       ['Velký leknín', 'Pole 4-4, 4-6, 4-8, 6-4, 6-8, 8-4, 8-6, 8-8 – jen odsud lze provést veleskok.'],
       ['Kouzelný leknín', 'Vítězné pole 6-6. Dosáhneš ho jen zaplaceným veleskokem.']
     ];

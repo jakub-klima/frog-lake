@@ -27,7 +27,7 @@ js/ui.js        – vykreslení plánu nad obrázkem a ovládání
 
 Plán je mřížka **13 × 13**. Vnitřní jezero má souřadnice **1–11** přesně tak,
 jak je očíslované na plánu a jak ho adresují kostky D12. Vnější prstenec
-(index 0 a 12) je břeh se **8 STARTy** a **8 HOUBAMI**. Herní pole jsou
+(index 0 a 12) je břeh se **8 STARTy**, **8 TRAMPOLÍNAMI** a **8 HOUBAMI**. Herní pole jsou
 absolutně napozicovaná nad `images/board.jpeg`, takže sedí na skutečnou grafiku.
 
 Typy polí byly odečteny přímo z obrázku plánu:
@@ -38,12 +38,20 @@ Typy polí byly odečteny přímo z obrázku plánu:
 | Velké lekníny (veleskok) | 4-4, 4-6, 4-8, 6-4, 6-8, 8-4, 8-6, 8-8 |
 | Vodní víry | rohy 1-1, 1-11, 11-1, 11-11 + 1-5/6/7, 11-5/6/7, 5-1/6-1/7-1, 5-11/6-11/7-11 |
 | Voda | 2-3, 3-2, 2-9, 3-10, 9-2, 10-3, 9-10, 10-9 + prstenec kolem Kouzelného leknínu |
-| Start | 0-3, 0-9, 12-3, 12-9, 3-0, 9-0, 3-12, 9-12 |
+| Start | 0-4, 0-8, 12-4, 12-8, 4-0, 8-0, 4-12, 8-12 (pole s nápisem START) |
+| Trampolína | 0-3, 0-9, 12-3, 12-9, 3-0, 9-0, 3-12, 9-12 (černý kruh v oranžovém rámu) |
 | Houba | rohy a středy břehu |
+
+Každá hrana břehu má pořadí houba(0) – leknín(1) – břeh(2) – **trampolína(3)** –
+**START(4)** – leknín(5) – houba(6) – leknín(7) – **START(8)** – **trampolína(9)** –
+břeh(10) – leknín(11) – houba(12).
 
 Šipky vírů: rohový vír má jednu úhlopříčnou šipku dovnitř, víry na pozicích
 5 a 7 každé hrany mají tři šipky (rovně + obě úhlopříčky) a vír uprostřed hrany
 (pozice 6) jednu šipku rovně. Vír vždy přenáší o 2 pole.
+
+Šipky trampolín jsou ty oranžové oblouky podél břehu – vedou na obě strany,
+vždy o 3 pole, takže žába dopadne přesně na sousední Houbu.
 
 Engine vyhodnocuje dopad skoku jako řetěz pokračování, takže se hra umí
 uprostřed tahu zeptat i **jiného hráče, než kdo je právě na tahu** – typicky
@@ -61,7 +69,8 @@ uprostřed tahu zeptat i **jiného hráče, než kdo je právě na tahu** – ty
 * Pohyb o 1 pole do všech 8 směrů, sbírání hmyzu z pole, kredity
   (moucha 1, světluška 1, vážka 2) včetně rozměňování vážky.
 * Pole: Voda (návrat na volný START), Vodní vír (výběr šipky, přesun o 2),
-  Houba (líznutí kouzla), Start, Břeh/Leknín, Velký leknín, Kouzelný leknín.
+  Trampolína (výběr šipky, přesun o 3), Houba (líznutí kouzla), Start,
+  Břeh/Leknín, Velký leknín, Kouzelný leknín.
 * Návrat na START si vždy vybírá postižený hráč – po pádu do vody i po zásahu
   Volavkou, Štikou nebo Žabijákem.
 * Skok na hlavu: sebrání 1 kreditu, následné sklouznutí na sousední pole
@@ -98,9 +107,13 @@ prototyp udělal a která je dobré potvrdit nebo změnit:
    stejně skryté).
 6. **Vážka ↔ mouchy** se v banku mění v poměru 1 : 2, tedy podle hodnoty
    v kreditech. Pravidla poměr výslovně neurčují.
-7. **Bahno a Trampolína** jsou v enginu implementované, ale na tomto plánu se
-   žádné takové pole nevyskytuje.
-8. Veleskok je po zaplacení **vždy úspěšný** (pravidla mluví o „úspěšném
+7. **Bahno** je v enginu implementované, ale na tomto plánu se žádné takové
+   pole nevyskytuje.
+8. **Trampolína** posune žábu o 3 pole ve směru vybrané šipky a účinek cílového
+   pole se pak normálně vyhodnotí (dopad na Houbu tedy dá kartu kouzla, dopad
+   na obsazené pole spustí skok na hlavu). Šipky vedou jen podél břehu –
+   pravidla jiný směr neuvádějí a plán jiný nekreslí.
+9. Veleskok je po zaplacení **vždy úspěšný** (pravidla mluví o „úspěšném
    doskočení“, ale test úspěchu nespecifikují).
 
 ## Co ještě chybí
