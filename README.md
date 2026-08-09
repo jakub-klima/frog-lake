@@ -63,7 +63,12 @@ uprostřed tahu zeptat i **jiného hráče, než kdo je právě na tahu** – ty
 * Rozmístění na začátku: každý hráč si sám klikne své startovní pole
   (nebo tlačítko „Rozmístit náhodně").
 * Tah: hod D10 + černá D12 + bílá D12, vyhodnocení události, skok, konec tahu.
+  Tah se **předává sám** – po dohrání se po krátké pauze ujme slova další hráč
+  (tlačítko „Další hráč ▶ hned" jen pauzu přeskočí). Pauza se automaticky
+  prodlouží, dokud někdo dohrává rozehrané kouzlo nebo směnu v bance.
 * Události: moucha (1-3), světluška (4-6), vážka (7-9), Vodník Lojzík (10/0).
+  Teleport je **událost hodu, ne skok** – hráč po něm ještě provádí svůj skok
+  (a včetně účinku pole, kam ho teleport zanesl).
 * Kostky D12 – hodnoty 1–11 adresují pole; při **12** si hráč vybírá řádek /
   sloupec, při dvou dvanáctkách libovolné pole.
 * Pohyb o 1 pole do všech 8 směrů, sbírání hmyzu z pole, kredity
@@ -78,12 +83,16 @@ uprostřed tahu zeptat i **jiného hráče, než kdo je právě na tahu** – ty
 * Veleskok: jen z velkého leknínu, za nastavenou cenu (výchozí 10 kreditů) →
   vítězství.
 * Všech **32 karet kouzel** včetně balíčku, odhazovacího balíčku a jeho
-  zamíchání po dobrání. Kouzlo lze seslat i uprostřed vlastního tahu –
-  nabídka skoku se poté přepočítá.
+  zamíchání po dobrání. Kouzlo lze podle pravidla 9 seslat **kdykoli** – i mimo
+  svůj tah. V panelu „Kouzla a hmyz" se přepíná mezi žábami; rozehraná nabídka
+  skoku se odloží a po doznění kouzla se sama vrátí. Čeká-li hra na jiné
+  rozhodnutí (výběr startu, směr víru, dotaz jiného kouzla), kouzlit nejde,
+  dokud se nedorozhodne.
 * Pasivní kouzla (Bublina, Helma, Plováky, Kvákrobatika) se v pravou chvíli
   nabídnou **svému majiteli**, který se rozhodne, zda je použije. Kvákrobatika
   navíc nechá uskočit na vybrané sousední pole.
-* Světluška: vrácení do banku výměnou za 1 mouchu od jiného hráče.
+* Světluška: vrácení do banku výměnou za 1 mouchu od jiného hráče – stejně jako
+  kouzla **kdykoli** a za kteroukoli žábu vybranou v panelu.
   Vážka se v banku mění za 2 mouchy a zpět.
 * Zápis hry, přehled hráčů, počítadlo balíčku a kola, legenda plánu.
 * Animace skoků a hodu kostkami, zvýraznění pole, kam přiletěl hmyz, výherní
@@ -95,8 +104,10 @@ uprostřed tahu zeptat i **jiného hráče, než kdo je právě na tahu** – ty
 Pravidla některé situace nechávají otevřené; tady jsou rozhodnutí, která
 prototyp udělal a která je dobré potvrdit nebo změnit:
 
-1. **Vodník Lojzík (D10 = 10/0)** – teleport se počítá jako pohyb daného tahu,
-   hráč už navíc neskáče.
+1. **Vodník Lojzík (D10 = 10/0)** – teleport je událost hodu, takže hráči
+   zůstává i jeho skok (pravidlo 4: „každý hráč se ve svém tahu musí pohnout").
+   Účinek pole, na které se teleportoval, se vyhodnotí normálně; pokud ho pošle
+   na START (voda) nebo posune (vír, trampolína), skáče až odtamtud.
 2. **Hmyz se umisťuje i na pole s vodou** (kostky adresují celé jezero 1–11);
    jen na Kouzelný leknín 6-6 se neumisťuje. Hmyz z vody sebereš, ale pak tě
    voda pošle na START.
@@ -115,6 +126,11 @@ prototyp udělal a která je dobré potvrdit nebo změnit:
    pravidla jiný směr neuvádějí a plán jiný nekreslí.
 9. Veleskok je po zaplacení **vždy úspěšný** (pravidla mluví o „úspěšném
    doskočení“, ale test úspěchu nespecifikují).
+10. **Žabiják** platí jen skokům hráče, který kartu aktivoval, a jen do konce
+    tahu, ve kterém ji zahrál. Seslat ho mimo svůj tah tedy jde, ale nemá to
+    smysl.
+11. **Automatické předání tahu** čeká zhruba 1,2 s (`autoPassMs`), aby si hráči
+    stihli přečíst zápis; pauzu lze přeskočit tlačítkem nebo mezerníkem.
 
 ## Co ještě chybí
 

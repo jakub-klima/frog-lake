@@ -227,6 +227,20 @@ button.mini { font-size: .7rem; padding: .22rem .45rem; }
 .btn-row { display: flex; gap: .5rem; }
 .btn-row button { flex: 1; }
 
+/* přepínač ruky – kouzla a hmyz lze použít kdykoli, i mimo svůj tah */
+.hand-picker { display: flex; flex-wrap: wrap; gap: .3rem; }
+.hp-chip {
+  display: flex; align-items: center; gap: .3rem;
+  padding: .2rem .45rem; font-size: .74rem; border-radius: 20px;
+  background: var(--bg2); color: var(--muted);
+}
+.hp-chip .frog-dot { width: 11px; height: 11px; border-width: 1px; }
+.hp-chip .hp-c { color: var(--muted); opacity: .8; }
+.hp-chip.on {
+  background: var(--panel2); color: var(--text);
+  border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent);
+}
+
 /* karty */
 .hand { display: flex; flex-wrap: wrap; gap: .4rem; }
 .hand:empty::after { content: "Zatím žádná kouzla."; color: var(--muted); font-size: .85rem; }

@@ -22,7 +22,10 @@
   class Game {
     constructor(opts) {
       this.onChange = null;
-      this.settings = { leapPrice: opts.leapPrice != null ? opts.leapPrice : 10 };
+      this.settings = {
+        leapPrice: opts.leapPrice != null ? opts.leapPrice : 10,
+        autoPassMs: opts.autoPassMs != null ? opts.autoPassMs : 1200
+      };
       this.tiles = FL.buildBoard();
       this.insects = {};           // "r,c" -> {fly, firefly, dragonfly}
       this.deck = shuffle(FL.buildDeck());
@@ -36,8 +39,10 @@
       this.round = 1;
       this.cur = 0;
       this.jumped = new Set();
-      this.zabijak = false;
+      this.zabijak = null;         // id hráče, který v tomto tahu aktivoval Žabijáka
       this._resumeMove = false;
+      this.moveDue = false;        // skok tahu ještě čeká (teleport se za skok nepočítá)
+      this._passTimer = null;
 
       this.players = opts.players.map((name, i) => ({
         id: i,
@@ -175,10 +180,14 @@
       this.ask({ kind: 'choice', actorId, hint, options, handler });
     }
 
-    askPlayer(hint, filter, handler) {
+    askPlayer(hint, filter, handler, actorId) {
       const ids = this.players.filter(filter).map(p => p.id);
       if (!ids.length) { this.log('Není koho zvolit.', 'sys'); return false; }
-      this.ask({ kind: 'player', actorId: this.player.id, hint, players: ids, cancel: () => {}, handler });
+      this.ask({
+        kind: 'player',
+        actorId: actorId == null ? this.player.id : actorId,
+        hint, players: ids, cancel: () => {}, handler
+      });
       return true;
     }
 
@@ -244,28 +253,50 @@
 
     // ================= průběh tahu =================
     beginTurn() {
+      this.clearAutoPass();
       this.jumped = new Set();
-      this.zabijak = false;
+      this.zabijak = null;
       this.dice = null;
       this.pending = null;
       this._resumeMove = false;
+      this.moveDue = false;
       const p = this.player;
 
       if (p.skipTurn) {
         p.skipTurn = false;
         this.log(`${p.name} uvízl v bahně – vynechává tah.`, 'bad');
         this.phase = 'done';
-      } else {
-        this.phase = 'roll';
+        this.emit();
+        this.scheduleAutoPass(this.settings.autoPassMs + 800);
+        return;
       }
+      this.phase = 'roll';
       this.emit();
     }
 
     nextPlayer() {
       if (this.winner) return;
+      this.clearAutoPass();
       this.cur = (this.cur + 1) % this.players.length;
       if (this.cur === 0) this.round++;
       this.beginTurn();
+    }
+
+    /* Tah se předává sám; tlačítko „Další hráč“ zůstává jen pro netrpělivé. */
+    scheduleAutoPass(delay) {
+      this.clearAutoPass();
+      if (this.winner || this.phase !== 'done') return;
+      this._passTimer = setTimeout(() => {
+        this._passTimer = null;
+        if (this.winner || this.phase !== 'done') return;
+        // někdo si mezitím sesílá kouzlo nebo mění hmyz – počká se, až dorozhodne
+        if (this.pending) return this.scheduleAutoPass(Math.max(200, this.settings.autoPassMs / 2));
+        this.nextPlayer();
+      }, delay == null ? this.settings.autoPassMs : delay);
+    }
+
+    clearAutoPass() {
+      if (this._passTimer) { clearTimeout(this._passTimer); this._passTimer = null; }
     }
 
     rollDice() {
@@ -280,10 +311,12 @@
       if (d10 === 10) {
         this.phase = 'teleport';
         this.askCell(this.player.id,
-          'Vodník Lojzík: teleportuj svou žábu na libovolné pole kromě Kouzelného leknínu.',
+          'Vodník Lojzík: teleportuj svou žábu na libovolné pole kromě Kouzelného leknínu. Skok tahu ti pak ještě zůstává.',
           this.allCellsExceptMagic(),
           (r, c) => {
             this.pending = null;
+            // teleport je událost hodu, ne skok – ten hráč provede až po něm (pravidlo 4)
+            this.moveDue = true;
             this.log(`${this.player.name} se teleportuje na ${this.coord(r, c)}.`, 'move');
             this.moveTo(this.player, r, c);
           });
@@ -340,6 +373,7 @@
     startMovePhase() {
       const p = this.player;
       this._resumeMove = false;
+      this.moveDue = false;
       this.phase = 'move';
       this.askCell(p.id, 'Skoč na sousední pole – vodorovně, svisle nebo úhlopříčně.',
         this.neighbourKeys(p.pos.r, p.pos.c),
@@ -347,7 +381,8 @@
           this.pending = null;
           this.log(`${p.name} skáče na ${this.coord(r, c)}.`, 'move');
           this.moveTo(p, r, c);
-        });
+        },
+        { deferrable: true });   // nabídku skoku lze odložit kvůli kouzlu či bance
     }
 
     canLeap() {
@@ -363,6 +398,8 @@
       this.spend(p, this.settings.leapPrice);
       this.pending = null;
       this._resumeMove = false;
+      this.moveDue = false;
+      this.clearAutoPass();
       p.pos = { r: FL.MAGIC_POS.r, c: FL.MAGIC_POS.c };
       this.winner = p;
       this.phase = 'won';
@@ -418,21 +455,22 @@
       this.log(`${att.name} skáče na hlavu hráči ${vic.name}!`, 'bad');
       if (this.credits(vic) <= 0) {
         this.log(`${vic.name} nemá žádný kredit k sebrání.`, 'sys');
-        return this.afterJump(vic, done);
+        return this.afterJump(att, vic, done);
       }
       this.offerPassive(vic, 'helma',
         `${vic.name} – použít Helmu a neztratit kredit?`,
-        () => { this.log(`${vic.name} má Helmu, kredit neztrácí.`, 'card'); this.afterJump(vic, done); },
+        () => { this.log(`${vic.name} má Helmu, kredit neztrácí.`, 'card'); this.afterJump(att, vic, done); },
         () => {
           this.spend(vic, 1);
           att.insects.fly += 1;
           this.log(`${att.name} bere hráči ${vic.name} 1 kredit.`, 'gain');
-          this.afterJump(vic, done);
+          this.afterJump(att, vic, done);
         });
     }
 
-    afterJump(vic, done) {
-      if (this.zabijak) this.askStart(vic, 'Žabiják', done);
+    /* Žabiják platí jen skokům toho, kdo kartu aktivoval. */
+    afterJump(att, vic, done) {
+      if (this.zabijak != null && att && this.zabijak === att.id) this.askStart(vic, 'Žabiják', done);
       else done();
     }
 
@@ -528,8 +566,17 @@
       if (this.winner) return;
       this.pending = null;
       this._resumeMove = false;
+
+      // po teleportu (a jeho následcích) hráči pořád zbývá vlastní skok
+      if (this.moveDue) {
+        this.log(`${this.player.name} má po teleportu ještě svůj skok.`, 'sys');
+        this.startMovePhase();
+        return;
+      }
+
       this.phase = 'done';
       this.emit();
+      this.scheduleAutoPass();
     }
 
     // ================= vstupy z UI =================
@@ -580,31 +627,39 @@
     /* Odloží rozehranou nabídku skoku, aby šlo mezitím seslat kouzlo
      * nebo vyměnit hmyz v banku. */
     beginInterrupt() {
-      if (this.phase === 'move' && this.pending) {
+      if (this.pending && this.pending.deferrable) {
         this.pending = null;
         this._resumeMove = true;
       }
     }
 
-    /* Kdykoli během své části tahu, dokud se nečeká na rozhodnutí někoho jiného. */
+    /* Kdykoli během hry – i mimo vlastní tah – dokud se nečeká na jiné rozhodnutí.
+     * Odložit jde jen nabídka skoku, rozehraný dotaz kouzla nikoli. */
     canAct() {
       if (this.winner || this.phase === 'won' || this.phase === 'setup') return false;
-      return !this.pending || this.phase === 'move';
+      return !this.pending || !!this.pending.deferrable;
+    }
+
+    /* Hráč, za kterého se akce provádí; výchozí je ten, kdo je na tahu. */
+    owner(p) {
+      if (p == null) return this.player;
+      return typeof p === 'number' ? this.players[p] : p;
     }
 
     // ================= banka a hmyz =================
-    /* 6) Světlušku lze vrátit do banku a vzít si 1 mouchu od jiného hráče. */
-    canTradeFirefly() {
+    /* 6) Světlušku lze vrátit do banku a vzít si 1 mouchu od jiného hráče – kdykoli. */
+    canTradeFirefly(who) {
       if (!this.canAct()) return false;
-      const p = this.player;
+      const p = this.owner(who);
+      if (!p) return false;
       return p.insects.firefly > 0 && this.players.some(o => o !== p && o.insects.fly > 0);
     }
 
-    tradeFirefly() {
-      if (!this.canTradeFirefly()) return;
-      const p = this.player;
+    tradeFirefly(who) {
+      if (!this.canTradeFirefly(who)) return;
+      const p = this.owner(who);
       this.beginInterrupt();
-      const ok = this.askPlayer('Světluška: vyber hráče, kterému vezmeš 1 mouchu.',
+      const ok = this.askPlayer(`${p.name} – světluška: vyber hráče, kterému vezmeš 1 mouchu.`,
         o => o !== p && o.insects.fly > 0,
         target => {
           this.pending = null;
@@ -612,21 +667,22 @@
           target.insects.fly--;
           p.insects.fly++;
           this.log(`${p.name} vrací světlušku do banku a bere mouchu hráči ${target.name}.`, 'gain');
-        });
+        }, p.id);
       if (!ok) this.maybeResumeMove();
       this.emit();
     }
 
     /* 6) Vážky a mouchy lze měnit ve stanoveném poměru – zde 1 vážka = 2 mouchy. */
-    canExchange(dir) {
+    canExchange(dir, who) {
       if (!this.canAct()) return false;
-      const p = this.player;
+      const p = this.owner(who);
+      if (!p) return false;
       return dir === 'split' ? p.insects.dragonfly > 0 : p.insects.fly >= 2;
     }
 
-    exchange(dir) {
-      if (!this.canExchange(dir)) return;
-      const p = this.player;
+    exchange(dir, who) {
+      if (!this.canExchange(dir, who)) return;
+      const p = this.owner(who);
       if (dir === 'split') {
         p.insects.dragonfly--; p.insects.fly += 2;
         this.log(`${p.name} mění v banku vážku za 2 mouchy.`, 'gain');
@@ -638,11 +694,15 @@
     }
 
     // ================= kouzla =================
-    canPlayCard() { return this.canAct(); }
+    /* 9) Kouzla lze používat kdykoli během hry – i mimo svůj tah. */
+    canPlayCard(who) {
+      if (!this.canAct()) return false;
+      return !!this.owner(who);
+    }
 
-    playCard(uid) {
-      if (!this.canPlayCard()) return;
-      const p = this.player;
+    playCard(uid, who) {
+      if (!this.canPlayCard(who)) return;
+      const p = this.owner(who);
       const card = p.hand.find(c => c.uid === uid);
       if (!card) return;
       const def = FL.CARD_BY_ID[card.id];
@@ -731,7 +791,7 @@
             p.insects[t]++;
             this.log(`${p.name} bere Černou rukou ${FL.INSECTS[t].name.toLowerCase()} hráči ${target.name}.`, 'card');
           });
-        });
+        }, p.id);
       if (!ok) this.maybeResumeMove();
     },
 
@@ -744,7 +804,7 @@
           const stolen = target.hand.splice(rnd(target.hand.length), 1)[0];
           p.hand.push(stolen);
           this.log(`${p.name} krade hráči ${target.name} kartu ${FL.CARD_BY_ID[stolen.id].name}.`, 'card');
-        });
+        }, p.id);
       if (!ok) this.maybeResumeMove();
     },
 
@@ -775,7 +835,7 @@
           this.discardFrom(p, uid);
           const tmp = p.pos; p.pos = target.pos; target.pos = tmp;
           this.log(`${p.name} si mění místo s hráčem ${target.name}.`, 'card');
-        });
+        }, p.id);
       if (!ok) this.maybeResumeMove();
     },
 
@@ -798,8 +858,10 @@
 
     zabijak(p, uid) {
       this.discardFrom(p, uid);
-      this.zabijak = true;
+      this.zabijak = p.id;
       this.log(`${p.name} aktivuje Žabijáka – žáby, na které v tomto kole skočí, půjdou na START.`, 'card');
+      if (p !== this.player)
+        this.log(`${p.name} ale není na tahu – Žabiják platí jen do konce tohoto tahu.`, 'sys');
     }
   };
 

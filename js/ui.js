@@ -21,6 +21,8 @@
   let frogEls = {};          // trvalé elementy žab, aby šel animovat skok
   let lastPos = {};          // poslední vykreslená pozice žab
   let lastFlash = null;      // naposledy zvýrazněná událost
+  let handId = null;         // ruka kterého hráče je v panelu; null = ten, kdo rozhoduje
+  let lastTurn = null;       // hlídá změnu tahu, aby se výběr ruky vrátil zpět
 
   const DEFAULT_NAMES = ['Kvákal', 'Skokan', 'Rosnička', 'Bahňák', 'Zelenka', 'Pulec', 'Ropušák', 'Blatnice'];
 
@@ -55,7 +57,7 @@
     $('setup').classList.add('hidden');
     $('game').classList.remove('hidden');
     buildCells();
-    frogEls = {}; lastPos = {};
+    frogEls = {}; lastPos = {}; handId = null; lastTurn = null;
     render();
   }
 
@@ -196,8 +198,16 @@
   // ================== PANELY ==================
   let diceAnim = null;
 
+  /* Ruka a bankovní akce se dají přepnout na kteréhokoli hráče –
+   * kouzla i světluška se podle pravidel smí použít kdykoli. */
+  function handPlayer() {
+    if (handId != null && game.players[handId]) return game.players[handId];
+    return game.actor;
+  }
+
   function renderSide() {
     const actor = game.winner || game.actor;
+    if (lastTurn !== game.cur) { handId = null; lastTurn = game.cur; }
     $('turnFrog').style.background = FL.FROG_COLORS[actor.idx];
     $('turnName').textContent = actor.name;
     $('turnCredits').textContent = game.credits(actor) + ' kr.';
@@ -215,6 +225,8 @@
     renderDice();
     renderActions();
     renderInsectBar();
+    renderHandPicker();
+    renderHandTools();
     renderHand();
     renderPlayers();
     renderLog();
@@ -262,7 +274,7 @@
   function hintForPhase() {
     switch (game.phase) {
       case 'roll': return 'Hoď kostkami: D10 určí událost, černá D12 řádek a bílá D12 sloupec.';
-      case 'done': return 'Tah je u konce – předej hru dalšímu hráči.';
+      case 'done': return 'Tah je u konce – hra sama předává dalšímu hráči…';
       default: return '';
     }
   }
@@ -289,7 +301,7 @@
 
     if (game.phase === 'roll' && !pend) a.append(mkBtn('🎲 Hoď kostkami', 'primary', () => game.rollDice()));
     if (game.canLeap()) a.append(mkBtn(`🌸 VELESKOK (−${game.settings.leapPrice} kr.)`, 'primary leap', () => game.doLeap()));
-    if (game.phase === 'done') a.append(mkBtn('Další hráč ▶', 'primary', () => game.nextPlayer()));
+    if (game.phase === 'done') a.append(mkBtn('Další hráč ▶ hned', 'primary', () => game.nextPlayer()));
     if (pend && pend.cancel) a.append(mkBtn('Zrušit', 'ghost', () => game.cancelPending()));
   }
 
@@ -299,34 +311,62 @@
     return b;
   }
 
-  /* Lišta s hmyzem hráče na tahu + výměny v banku (pravidlo 6). */
-  function renderInsectBar() {
-    const bar = $('insectBar');
-    bar.innerHTML = '';
-    if (game.phase === 'setup' || game.winner) return;
-    const p = game.actor;   // shodně s hlavičkou panelu
-
+  function insectItems(box, p) {
     FL.INSECT_KEYS.forEach(t => {
       const item = el('div', 'ins');
       item.title = `${FL.INSECTS[t].name} – ${FL.INSECTS[t].value} kr.`;
       item.innerHTML = `<img src="${FL.INSECTS[t].img}" alt=""><b>${p.insects[t]}</b>`;
-      bar.append(item);
+      box.append(item);
     });
+  }
+
+  /* Lišta s hmyzem hráče, který právě rozhoduje – jen pro přehled. */
+  function renderInsectBar() {
+    const bar = $('insectBar');
+    bar.innerHTML = '';
+    if (game.phase === 'setup' || game.winner) return;
+    insectItems(bar, game.actor);
+  }
+
+  /* Přepínač ruky – kouzla i výměny v banku smí hráč použít kdykoli. */
+  function renderHandPicker() {
+    const wrap = $('handPicker');
+    wrap.innerHTML = '';
+    if (game.phase === 'setup' || game.winner) return;
+    const owner = handPlayer();
+    game.players.forEach(p => {
+      const b = el('button', 'hp-chip' + (p === owner ? ' on' : ''));
+      const dot = el('span', 'frog-dot');
+      dot.style.background = FL.FROG_COLORS[p.idx];
+      b.append(dot, el('span', 'hp-n', esc(p.name)), el('span', 'hp-c', p.hand.length + '×'));
+      b.title = `Ukázat kouzla a hmyz hráče ${p.name}`;
+      b.onclick = () => { handId = p.id; render(); };
+      wrap.append(b);
+    });
+  }
+
+  /* Výměny v banku (pravidlo 6) pro vybraného hráče. */
+  function renderHandTools() {
+    const bar = $('handTools');
+    bar.innerHTML = '';
+    if (game.phase === 'setup' || game.winner) return;
+    const p = handPlayer();
+    insectItems(bar, p);
 
     const tools = el('div', 'ins-tools');
-    if (game.canExchange('split'))
-      tools.append(mkBtn('Vážka → 2 mouchy', 'mini', () => game.exchange('split')));
-    if (game.canExchange('merge'))
-      tools.append(mkBtn('2 mouchy → vážka', 'mini', () => game.exchange('merge')));
-    if (game.canTradeFirefly())
-      tools.append(mkBtn('Světluška → moucha od hráče', 'mini', () => game.tradeFirefly()));
+    if (game.canExchange('split', p))
+      tools.append(mkBtn('Vážka → 2 mouchy', 'mini', () => game.exchange('split', p)));
+    if (game.canExchange('merge', p))
+      tools.append(mkBtn('2 mouchy → vážka', 'mini', () => game.exchange('merge', p)));
+    if (game.canTradeFirefly(p))
+      tools.append(mkBtn('Světluška → moucha od hráče', 'mini', () => game.tradeFirefly(p)));
     if (tools.children.length) bar.append(tools);
   }
 
   function renderHand() {
     const h = $('hand');
     h.innerHTML = '';
-    const p = game.player;
+    const p = handPlayer();
     $('handOwner').textContent = p.name;
     p.hand.forEach(card => {
       const def = FL.CARD_BY_ID[card.id];
@@ -336,8 +376,8 @@
         (def.passive ? '<small>pasivní</small>' : '<small>klikni = sešli</small>');
       c.title = def.text;
       c.onclick = () => {
-        if (def.passive || !game.canPlayCard()) showCardModal(def);
-        else game.playCard(card.uid);
+        if (def.passive || !game.canPlayCard(p)) showCardModal(def);
+        else game.playCard(card.uid, p);
       };
       h.append(c);
     });
@@ -423,8 +463,12 @@
       '<div><b>Moucha</b> – 1 kredit</div><div><b>Světluška</b> – 1 kredit, nebo ji vrať do banku a vezmi si mouchu od jiného hráče</div>' +
       '<div><b>Vážka</b> – 2 kredity, v banku ji lze měnit za 2 mouchy</div></div>' +
       '<h2 style="margin-top:1rem">Ovládání</h2><div class="legend">' +
-      '<div><b>Mezerník</b> – hlavní akce (hod kostkami / další hráč)</div>' +
-      '<div><b>Esc</b> – zavřít okno nebo zrušit zaměřování kouzla</div></div>';
+      '<div><b>Mezerník</b> – hlavní akce (hod kostkami / předat tah hned)</div>' +
+      '<div><b>Esc</b> – zavřít okno nebo zrušit zaměřování kouzla</div>' +
+      '<div><b>Předání tahu</b> – proběhne samo, jakmile hráč dohraje svůj tah</div>' +
+      '<div><b>Kouzla a světluška</b> – jdou použít kdykoli, i mimo svůj tah; ' +
+      'v panelu „Kouzla a hmyz“ přepni na příslušnou žábu</div>' +
+      '<div><b>Vodník Lojzík</b> – teleport je událost hodu, svůj skok hráč provádí až po něm</div></div>';
   }
 
   // ================== START ==================
