@@ -1,0 +1,15 @@
+{
+  "name": "zabi-jezero",
+  "version": "2.0.0",
+  "description": "Žabí jezero – rodinná závodní hra pro 1–8 hráčů na jednom zařízení i online.",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tools/selftest.js && node tools/servertest.js",
+    "rules": "node tools/export-rules.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

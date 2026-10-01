@@ -2,10 +2,11 @@
  *
  * Herní plán je mřížka 13x13. Vnitřní jezero má souřadnice 1..11
  * (přesně tak, jak je očíslované na plánu a jak ho adresují kostky D12).
- * Vnější prstenec (index 0 a 12) je BŘEH se STARTy a HOUBAMI.
+ * Vnější prstenec (index 0 a 12) je BŘEH se STARTy, TRAMPOLÍNAMI, HOUBAMI a BAHNEM.
+ * Soubor běží v prohlížeči i v Node.js (online server), proto globalThis.
  */
 (function () {
-  const FL = (window.FL = window.FL || {});
+  const FL = (globalThis.FL = globalThis.FL || {});
 
   FL.SIZE = 13;
   FL.LAKE_MIN = 1;
@@ -21,7 +22,7 @@
     WHIRL: 'whirl',
     MAGIC: 'magic',
     TRAMPOLINE: 'trampoline',
-    MUD: 'mud'                // v pravidlech je, na tomto plánu se nevyskytuje
+    MUD: 'mud'
   };
 
   FL.TILE_NAME = {
@@ -49,9 +50,10 @@
 
   // --- pevné pozice odečtené z obrázku plánu -------------------------------
   /* Na každé hraně břehu je pořadí polí:
-   * houba(0) – leknín(1) – břeh(2) – TRAMPOLÍNA(3) – START(4) – leknín(5) –
-   * houba(6) – leknín(7) – START(8) – TRAMPOLÍNA(9) – břeh(10) – leknín(11) – houba(12)
+   * houba(0) – BAHNO(1) – břeh(2) – TRAMPOLÍNA(3) – START(4) – BAHNO(5) –
+   * houba(6) – BAHNO(7) – START(8) – TRAMPOLÍNA(9) – břeh(10) – BAHNO(11) – houba(12)
    * Startovní pole je to s nápisem START, ne černý kruh trampolíny vedle něj.
+   * Bahno jsou tmavé bažinaté plochy na břehu vedle hub (polí kouzel).
    */
   FL.STARTS = [
     { r: 0, c: 4 }, { r: 0, c: 8 },
@@ -79,6 +81,10 @@
     [6, 4], [6, 8],
     [8, 4], [8, 6], [8, 8]
   ];
+
+  // Bahno – na každé hraně břehu pozice 1, 5, 7 a 11.
+  const MUD = [];
+  [1, 5, 7, 11].forEach(i => MUD.push([0, i], [12, i], [i, 0], [i, 12]));
 
   FL.MAGIC_POS = { r: 6, c: 6 };
 
@@ -149,6 +155,7 @@
 
     FL.STARTS.forEach(s => (tiles[key(s.r, s.c)].type = T.START));
     MUSHROOMS.forEach(([r, c]) => (tiles[key(r, c)].type = T.MUSHROOM));
+    MUD.forEach(([r, c]) => (tiles[key(r, c)].type = T.MUD));
     WATER.forEach(([r, c]) => (tiles[key(r, c)].type = T.WATER));
     FL.BIG_LILIES.forEach(([r, c]) => (tiles[key(r, c)].type = T.BIG));
     WHIRLS.forEach(([r, c]) => {
@@ -175,6 +182,9 @@
     return m[dr + ',' + dc] || '→';
   };
 
+  FL.isMagic = (r, c) => r === FL.MAGIC_POS.r && c === FL.MAGIC_POS.c;
+  FL.dist = (a, b) => Math.max(Math.abs(a.r - b.r), Math.abs(a.c - b.c));
+
   FL.inBoard = (r, c) => r >= 0 && c >= 0 && r < FL.SIZE && c < FL.SIZE;
   FL.inLake = (r, c) =>
     r >= FL.LAKE_MIN && r <= FL.LAKE_MAX && c >= FL.LAKE_MIN && c <= FL.LAKE_MAX;
@@ -195,6 +205,12 @@
     fly: { name: 'Moucha', value: 1, img: 'images/old/Fly.png' },
     firefly: { name: 'Světluška', value: 1, img: 'images/old/Firefly.png' },
     dragonfly: { name: 'Vážka', value: 2, img: 'images/old/Dragonfly.png' }
+  };
+  // tvary pro hlášky: "přiletěla nová moucha", "sebral mouchu"
+  FL.INSECT_FORMS = {
+    fly: { one: 'moucha', acc: 'mouchu', gen: 'mouchy', plural: 'mouchy' },
+    firefly: { one: 'světluška', acc: 'světlušku', gen: 'světlušky', plural: 'světlušky' },
+    dragonfly: { one: 'vážka', acc: 'vážku', gen: 'vážky', plural: 'vážky' }
   };
   FL.INSECT_KEYS = ['fly', 'firefly', 'dragonfly'];
 
@@ -252,4 +268,5 @@
 
   FL.FROG_COLORS = ['#4caf50', '#e0533d', '#f2c744', '#3d8fe0', '#b45fd6', '#e07fb0', '#26bfa5', '#c98a3c'];
   FL.FROG_IMG = i => 'images/old/Frog' + (i + 1) + '.png';
+  FL.MAX_PLAYERS = 8;
 })();

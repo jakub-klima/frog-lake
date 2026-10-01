@@ -1,140 +1,130 @@
-# Žabí jezero – prototyp (HTML + JS)
+# Žabí jezero® – verze 2
 
-První nástřel digitální verze deskové hry **Žabí jezero®** podle `game rules.txt`
-a obrázku plánu `images/board.jpeg`.
+Digitální verze rodinné deskové hry **Žabí jezero** pro **1–8 hráčů**: na jednom
+zařízení (s počítačovými žábami i bez nich) i **online** – každý na svém telefonu,
+tabletu nebo počítači. Pravidla jsou v `game rules.txt` (pro deskovou hru) a ve hře
+pod klávesou **R**; obojí vzniká z jednoho zdroje `js/rules.js`.
 
 ## Spuštění
 
-Stačí otevřít `index.html` v prohlížeči (funguje i přes `file://`, žádný build
-ani server není potřeba). Případně:
+**Hra na jednom zařízení** – stačí otevřít `index.html` v prohlížeči (funguje i přes
+`file://`, bez instalace a bez internetu).
+
+**Online hra** – potřebuje jen [Node.js 18+](https://nodejs.org), žádné další balíčky:
 
 ```
-python3 -m http.server 8000
-# → http://localhost:8000
+node server.js          # nebo: npm start
+# 🐸 Žabí jezero běží na http://localhost:8080
+#    ve stejné síti (telefon, tablet): http://192.168.x.x:8080
 ```
 
-Hraje se **hot-seat** – 2 až 8 hráčů na jednom zařízení.
+Na adrese z výpisu klikni na **Online s přáteli → Založit novou místnost** a pošli
+ostatním odkaz nebo pětimístný kód. Hostitel může volná místa doplnit počítači,
+nastavit cenu veleskoku, časový limit a Žabí štěstí a spustí hru.
+
+Pro hraní přes internet stačí `server.js` nasadit na libovolný hosting s Node.js
+(Render, Railway, Fly.io, VPS…); port se bere z proměnné `PORT`. Statický hosting
+(např. GitHub Pages) zvládne jen hru na jednom zařízení.
+
+## Ovládání
+
+Skoky, cíle **vírů a trampolín**, cíle kouzel i útoků se vybírají kliknutím
+(ťuknutím) na zvýrazněná pole. Klávesy jsou ve hře vypsané v panelu *Klávesy*
+a dají se i proklikat (na telefonu):
+
+| Klávesa | Funkce |
+|---|---|
+| **Mezerník** | Akce – kdokoli kdykoli použije světlušku nebo kouzlo (zap/vyp nabídky) |
+| **Enter** | Hodit kostkami / veleskok / další hráč |
+| **S** | Zvukové efekty zap/vyp |
+| **M** | Podkladová hudba zap/vyp |
+| **R** | Kompletní pravidla |
+| **N** | Nová hra |
+| **Q** | Ukončit hru |
+| **Esc** | Zavřít okno / zrušit rozehranou akci |
+
+Po stisku mezerníku se v nabídce vybere hráč (v nabídce, v tabulce nebo kliknutím
+na jeho žábu), pak *Zaútočit světluškou* (cíl se opět vybere v tabulce nebo na
+plánu – vezme mu 1 kredit) nebo kouzlo ze seznamu jeho karet. Online hraje každý
+jen za sebe a cizí karty nevidí.
+
+## Obrazovka hry
+
+1. **Herní plán** – zvýrazněná pole ke kliknutí, šipky vírů a trampolín, hlášky
+   o důležitých událostech přímo nad jezerem.
+2. **Tabulka skóre** – jméno, kredity (s ukazatelem k ceně veleskoku), vážky,
+   světlušky, mouchy a zda má hráč kouzlo. Pořadí: kredity → při shodě výš ten, kdo
+   skóre dosáhl později → abecedně.
+3. **Na jezeře** – zelená D10, černá a bílá D12 jako obrázky kostek s animací hodu
+   a hláška, co se stalo („Na jezero přiletěla nová vážka!“, „Vodník Lojzík se
+   vynořil z hlubin!“…), kam to dopadlo a kdo co získal.
+4. **Klávesy** a **Kronika jezera** (zápis celé hry).
+
+## Co je ve verzi 2 nového
+
+**Opravy pravidel**
+* Hmyz, který dopadne na pole se žábou, žába **okamžitě získá**.
+* Hmyz, který dopadne na **Kouzelný leknín**, získá hráč, který hodil kostkami
+  (při dvanáctce si ho tak hráč může „poslat“ sám sobě).
+* **Bahno** je konečně na plánu – tmavé bažiny na břehu vedle Hub a STARTů
+  (pozice 1, 5, 7, 11 každé strany). Kdo do něj skočí, příští tah nehází ani neskáče.
+* Víry a trampolíny – cíl se vybírá kliknutím na zvýrazněné pole.
+* Světluška – útok na libovolného hráče s kreditem (vezme mu 1 kredit), kdykoli.
+
+**Fér a napínavá hra**
+* Kdo začíná, určí kostka; starty se vybírají v opačném pořadí (začínající poslední).
+* **Žabí štěstí** (lze vypnout): kdo zaostává o 5+ kreditů za vedoucím, dostane na
+  začátku tahu mouchu z banku.
+* Akce kdykoli kýmkoli – vedoucí žába se nikdy necítí v bezpečí.
+* Volitelný **časový limit** – kdo se nerozhodne včas, za toho rozhodne „žabí
+  intuice“ (stejná logika jako počítač). Online hraje autopilot i za odpojené hráče,
+  takže hra nikdy nezamrzne.
+* Počítačové žáby pro hru jednoho hráče nebo doplnění stolu (3 rychlosti).
+* Ověřeno simulací: v 600 hrách počítačů jsou výhry rozložené rovnoměrně mezi
+  všechna místa u stolu (`npm test`).
+
+**Zvuky** – syntetizované přímo v prohlížeči (hod, skok, hmyz, kouzla, voda, bahno,
+vír, trampolína, Vodník, vítězství) a tichá podkladová hudba. Žádné zvukové soubory;
+skutečné nahrávky lze doplnit v dalším kroku v `js/audio.js`.
 
 ## Struktura
 
 ```
-index.html      – kostra stránky (obrazovka nastavení + hra)
-css/style.css   – vzhled
-js/data.js      – herní plán (typy polí, šipky vírů) + definice 32 karet kouzel
-js/game.js      – herní engine, pravidla, fáze tahu
-js/ui.js        – vykreslení plánu nad obrázkem a ovládání
+index.html          – menu, online místnost, herní obrazovka
+css/style.css       – vzhled (desktop, tablet, telefon)
+js/data.js          – herní plán (typy polí, šipky) a 32 karet kouzel
+js/texts.js         – všechny hlášky a nápovědy (snadno se ladí)
+js/rules.js         – kompletní pravidla (zdroj pro hru i game rules.txt)
+js/game.js          – herní engine; běží v prohlížeči i na serveru
+js/ai.js            – počítačové žáby a autopilot (časový limit, odpojení)
+js/audio.js         – zvukové efekty a hudba (Web Audio)
+js/net.js           – online klient (Server-Sent Events + POST)
+js/ui.js            – vykreslení a ovládání
+server.js           – online server bez závislostí (Node.js)
+tools/selftest.js   – testy pravidel + simulace stovek her
+tools/servertest.js – test online serveru
+tools/export-rules.js – vygeneruje game rules.txt z js/rules.js
 ```
 
-Plán je mřížka **13 × 13**. Vnitřní jezero má souřadnice **1–11** přesně tak,
-jak je očíslované na plánu a jak ho adresují kostky D12. Vnější prstenec
-(index 0 a 12) je břeh se **8 STARTy**, **8 TRAMPOLÍNAMI** a **8 HOUBAMI**. Herní pole jsou
-absolutně napozicovaná nad `images/board.jpeg`, takže sedí na skutečnou grafiku.
+Engine má jediný vstup `apply(akce, hráč)` a jediný výstup `snapshot(hráč)` (čistý
+JSON, cizí karty skryté). UI kreslí jen ze snímku, takže je stejné lokálně i online.
 
-Typy polí byly odečteny přímo z obrázku plánu:
+## Rozhodnutí, která je dobré potvrdit
 
-| Pole | Souřadnice |
-|---|---|
-| Kouzelný leknín | 6-6 |
-| Velké lekníny (veleskok) | 4-4, 4-6, 4-8, 6-4, 6-8, 8-4, 8-6, 8-8 |
-| Vodní víry | rohy 1-1, 1-11, 11-1, 11-11 + 1-5/6/7, 11-5/6/7, 5-1/6-1/7-1, 5-11/6-11/7-11 |
-| Voda | 2-3, 3-2, 2-9, 3-10, 9-2, 10-3, 9-10, 10-9 + prstenec kolem Kouzelného leknínu |
-| Start | 0-4, 0-8, 12-4, 12-8, 4-0, 8-0, 4-12, 8-12 (pole s nápisem START) |
-| Trampolína | 0-3, 0-9, 12-3, 12-9, 3-0, 9-0, 3-12, 9-12 (černý kruh v oranžovém rámu) |
-| Houba | rohy a středy břehu |
+1. **Vodník Lojzík** je událost hodu – hráč se po teleportu ještě normálně pohne.
+2. **Bahno**: kdo do něj zapadne ještě před svým skokem (po Vodníkovi), přijde
+   i o zbytek tahu – a vynechá i tah příští.
+3. **Útok světluškou** bere 1 kredit (napadený odevzdá hmyz za 1 kredit, vážku si
+   rozmění); útočník dostane mouchu z banku. Helma proti světlušce nechrání.
+4. **Skok na hlavu** – každého hráče lze skočit nejvýše jednou za tah.
+5. **Vážka ↔ mouchy** se mění 1 : 2. Volavka a Štika nezasahují sesílajícího.
+6. **Žabí štěstí** – hranice 5 kreditů, odměna 1 moucha (v `js/game.js`, `luckGap`).
+7. Dvanáctka na D12 dovoluje vybrat i Kouzelný leknín nebo vlastní pole – hmyz pak
+   získá sám házející. Je to šťastný hod; kdyby to bylo moc silné, stačí ve
+   `rollDice` z volby vyřadit 6-6.
 
-Každá hrana břehu má pořadí houba(0) – leknín(1) – břeh(2) – **trampolína(3)** –
-**START(4)** – leknín(5) – houba(6) – leknín(7) – **START(8)** – **trampolína(9)** –
-břeh(10) – leknín(11) – houba(12).
+## Co dál
 
-Šipky vírů: rohový vír má jednu úhlopříčnou šipku dovnitř, víry na pozicích
-5 a 7 každé hrany mají tři šipky (rovně + obě úhlopříčky) a vír uprostřed hrany
-(pozice 6) jednu šipku rovně. Vír vždy přenáší o 2 pole.
-
-Šipky trampolín jsou ty oranžové oblouky podél břehu – vedou na obě strany,
-vždy o 3 pole, takže žába dopadne přesně na sousední Houbu.
-
-Engine vyhodnocuje dopad skoku jako řetěz pokračování, takže se hra umí
-uprostřed tahu zeptat i **jiného hráče, než kdo je právě na tahu** – typicky
-„chceš použít Helmu?" nebo „vyber si volný START". Kdo právě rozhoduje, hlásí
-červený pruh v panelu i orámování v seznamu hráčů.
-
-## Co je hotové
-
-* Rozmístění na začátku: každý hráč si sám klikne své startovní pole
-  (nebo tlačítko „Rozmístit náhodně").
-* Tah: hod D10 + černá D12 + bílá D12, vyhodnocení události, skok, konec tahu.
-  Tah se **předává sám** – po dohrání se po krátké pauze ujme slova další hráč
-  (tlačítko „Další hráč ▶ hned" jen pauzu přeskočí). Pauza se automaticky
-  prodlouží, dokud někdo dohrává rozehrané kouzlo nebo směnu v bance.
-* Události: moucha (1-3), světluška (4-6), vážka (7-9), Vodník Lojzík (10/0).
-  Teleport je **událost hodu, ne skok** – hráč po něm ještě provádí svůj skok
-  (a včetně účinku pole, kam ho teleport zanesl).
-* Kostky D12 – hodnoty 1–11 adresují pole; při **12** si hráč vybírá řádek /
-  sloupec, při dvou dvanáctkách libovolné pole.
-* Pohyb o 1 pole do všech 8 směrů, sbírání hmyzu z pole, kredity
-  (moucha 1, světluška 1, vážka 2) včetně rozměňování vážky.
-* Pole: Voda (návrat na volný START), Vodní vír (výběr šipky, přesun o 2),
-  Trampolína (výběr šipky, přesun o 3), Houba (líznutí kouzla), Start,
-  Břeh/Leknín, Velký leknín, Kouzelný leknín.
-* Návrat na START si vždy vybírá postižený hráč – po pádu do vody i po zásahu
-  Volavkou, Štikou nebo Žabijákem.
-* Skok na hlavu: sebrání 1 kreditu, následné sklouznutí na sousední pole
-  (může řetězit další interakce), každý hráč nejvýše jednou za kolo.
-* Veleskok: jen z velkého leknínu, za nastavenou cenu (výchozí 10 kreditů) →
-  vítězství.
-* Všech **32 karet kouzel** včetně balíčku, odhazovacího balíčku a jeho
-  zamíchání po dobrání. Kouzlo lze podle pravidla 9 seslat **kdykoli** – i mimo
-  svůj tah. V panelu „Kouzla a hmyz" se přepíná mezi žábami; rozehraná nabídka
-  skoku se odloží a po doznění kouzla se sama vrátí. Čeká-li hra na jiné
-  rozhodnutí (výběr startu, směr víru, dotaz jiného kouzla), kouzlit nejde,
-  dokud se nedorozhodne.
-* Pasivní kouzla (Bublina, Helma, Plováky, Kvákrobatika) se v pravou chvíli
-  nabídnou **svému majiteli**, který se rozhodne, zda je použije. Kvákrobatika
-  navíc nechá uskočit na vybrané sousední pole.
-* Světluška: vrácení do banku výměnou za 1 mouchu od jiného hráče – stejně jako
-  kouzla **kdykoli** a za kteroukoli žábu vybranou v panelu.
-  Vážka se v banku mění za 2 mouchy a zpět.
-* Zápis hry, přehled hráčů, počítadlo balíčku a kola, legenda plánu.
-* Animace skoků a hodu kostkami, zvýraznění pole, kam přiletěl hmyz, výherní
-  obrazovka, ovládání mezerníkem a Esc, rozvržení pro mobil. Animace respektují
-  systémové nastavení „omezit pohyb".
-
-## Vědomá zjednodušení prototypu
-
-Pravidla některé situace nechávají otevřené; tady jsou rozhodnutí, která
-prototyp udělal a která je dobré potvrdit nebo změnit:
-
-1. **Vodník Lojzík (D10 = 10/0)** – teleport je událost hodu, takže hráči
-   zůstává i jeho skok (pravidlo 4: „každý hráč se ve svém tahu musí pohnout").
-   Účinek pole, na které se teleportoval, se vyhodnotí normálně; pokud ho pošle
-   na START (voda) nebo posune (vír, trampolína), skáče až odtamtud.
-2. **Hmyz se umisťuje i na pole s vodou** (kostky adresují celé jezero 1–11);
-   jen na Kouzelný leknín 6-6 se neumisťuje. Hmyz z vody sebereš, ale pak tě
-   voda pošle na START.
-3. **Volavka a Štika** nezasahují sesílajícího hráče.
-4. **Kvákrobatika** dovolí uskočit jen na volné sousední pole, které není voda –
-   uskočená žába pak neřeší účinek pole, kam dopadla.
-5. **Černá magie** bere náhodnou kartu z ruky soupeře (ruce jsou v hot-seatu
-   stejně skryté).
-6. **Vážka ↔ mouchy** se v banku mění v poměru 1 : 2, tedy podle hodnoty
-   v kreditech. Pravidla poměr výslovně neurčují.
-7. **Bahno** je v enginu implementované, ale na tomto plánu se žádné takové
-   pole nevyskytuje.
-8. **Trampolína** posune žábu o 3 pole ve směru vybrané šipky a účinek cílového
-   pole se pak normálně vyhodnotí (dopad na Houbu tedy dá kartu kouzla, dopad
-   na obsazené pole spustí skok na hlavu). Šipky vedou jen podél břehu –
-   pravidla jiný směr neuvádějí a plán jiný nekreslí.
-9. Veleskok je po zaplacení **vždy úspěšný** (pravidla mluví o „úspěšném
-   doskočení“, ale test úspěchu nespecifikují).
-10. **Žabiják** platí jen skokům hráče, který kartu aktivoval, a jen do konce
-    tahu, ve kterém ji zahrál. Seslat ho mimo svůj tah tedy jde, ale nemá to
-    smysl.
-11. **Automatické předání tahu** čeká zhruba 1,2 s (`autoPassMs`), aby si hráči
-    stihli přečíst zápis; pauzu lze přeskočit tlačítkem nebo mezerníkem.
-
-## Co ještě chybí
-
-* Ruce hráčů jsou v hot-seatu vidět všem – chybí obrazovka „předej zařízení“
-  se skrýváním karet.
-* Žádný počítačový protihráč, žádná hra po síti, žádné ukládání rozehrané hry.
-* Zvuky.
+* Skutečné nahrané zvuky a hudba místo syntetizovaných.
+* Nasazení serveru na veřejnou adresu a instalace jako aplikace (PWA).
+* Týmová hra, statistiky hráčů, chat/emoji reakce v online místnosti.
