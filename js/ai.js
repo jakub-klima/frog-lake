@@ -105,7 +105,7 @@
         if (me.pos && x.r === me.pos.r && x.c === me.pos.c) return 100;
         if (FL.isMagic(x.r, x.c)) return 90;
         const mine = me.pos ? FL.dist(x, me.pos) : 9;
-        const theirs = Math.min(9, ...g.players.filter(o => o !== me && o.pos).map(o => FL.dist(x, o.pos)));
+        const theirs = Math.min(9, ...g.active.filter(o => o !== me && o.pos).map(o => FL.dist(x, o.pos)));
         return theirs - mine * 1.5 + noise();
       }));
     }
@@ -167,7 +167,7 @@
     if (!g.canAct()) return null;
     const card = id => me.hand.find(c => c.id === id);
     const play = c => ({ type: 'card', uid: c.uid, who: me.id });
-    const others = g.players.filter(o => o !== me);
+    const others = g.active.filter(o => o !== me);
     const price = g.settings.leapPrice;
     const myCr = g.credits(me);
 
@@ -224,7 +224,7 @@
   function decide(g, id, opts) {
     const o = opts || {};
     const me = g.players[id];
-    if (!me || g.winner) return null;
+    if (!me || me.done || g.halted) return null;
     const pend = g.pending;
 
     const mayCast = () => {
@@ -248,7 +248,7 @@
     switch (pend.kind) {
       case 'cell':
         if (pend.tag === 'move') {
-          if (g.canLeap()) return { type: 'leap' };
+          if (pend.leap) return { type: 'cell', r: FL.MAGIC_POS.r, c: FL.MAGIC_POS.c };   // veleskok
           const a = mayCast();
           if (a) return a;
         }
@@ -268,7 +268,7 @@
     let timer = null, sig = null, tries = 0, stopped = false;
 
     const waitingFor = () => {
-      if (g.winner) return null;
+      if (g.halted) return null;
       if (g.pending) return g.pending.actorId;
       if (g.phase === 'roll') return g.cur;
       return null;

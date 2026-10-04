@@ -107,6 +107,11 @@
       'Houba! {name} si bere kartu kouzla.'
     ], { name }),
     draw: (name) => `${name} si bere kartu kouzla.`,
+    mushroomCard: (name, spell) => say([
+      'Kouzelná houba! {name} získává kouzlo {spell}.',
+      '{name} skáče na houbu a získává kouzlo {spell}!',
+      'Houba se rozzářila – {name} získává kouzlo {spell}.'
+    ], { name, spell }),
     magicNoWin: () => 'Na Kouzelný leknín lze zvítězit jen veleskokem z velkého leknínu.',
     startPick: name => `${name} usedá na startovní pole.`,
     toStart: (name, reason) => `${name} se vrací na START (${reason}).`,
@@ -119,6 +124,7 @@
     headSteal: (att, vic) => `${att} bere hráči ${vic} 1 kredit.`,
     headEmpty: vic => `${vic} nemá žádný kredit, o který by přišel.`,
     slide: (name, pos) => `${name} sklouzává na pole ${pos}.`,
+    landStays: (name, pos) => `Pole ${pos} je volné – ${name} na něm zůstává.`,
     dodge: (name, pos) => `${name} provádí Kvákrobatiku a uskakuje na pole ${pos}!`,
     helmet: name => `Cink! ${name} má Helmu a kredit si nechává.`,
     bubble: name => `${name} se schovává v Bublině – útok neplatí.`,
@@ -139,6 +145,12 @@
     // ---------- konec ----------
     leap: (name, price) => `VELESKOK! ${name} platí ${price} kreditů a letí ke Kouzelnému leknínu…`,
     win: name => `🏆 ${name} dosedá na Kouzelný leknín a vyhrává Žabí jezero!`,
+    finish: (name, place) => `${['', '🥇', '🥈', '🥉'][place] || '🏅'} ${name} doskakuje na Kouzelný leknín a bere ${place}. místo!`,
+    continueGame: () => pick([
+      'Hra pokračuje – ostatní žáby skáčou o další místa!',
+      'Dohráváme na pořadí! Kdo bude další na Kouzelném leknínu?'
+    ]),
+    gameOver: () => 'Konec hry – všechna místa jsou rozdána.',
 
     // ---------- nápovědy (komu a co teď udělat) ----------
     hint: {
@@ -146,6 +158,7 @@
       start: name => `${name}, vyber si volné startovní pole.`,
       roll: name => `${name}, hoď kostkami! (tlačítko nebo Enter)`,
       move: name => `${name}, vyber cíl svého skoku.`,
+      leapReady: name => `${name}, máš dost kreditů! Klikni na zářící Kouzelný leknín a proveď veleskok – nebo skoč obyčejně.`,
       moveAfterVodnik: name => `${name}, Vodník Tě přenesl – teď vyber cíl svého skoku.`,
       teleport: name => `${name}, Vodník Tě přenese na pole, které si vybereš.`,
       twelveRow: (name, type) => `${name}, vyber řádek, kam přiletí ${FL.INSECT_FORMS[type].one}.`,

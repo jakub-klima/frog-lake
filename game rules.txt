@@ -63,15 +63,19 @@ Kredity lze získávat, utrácet, krást nebo ztrácet podle pravidel hry a úč
 Na Kouzelný leknín lze zvítězit pouze veleskokem, a to z jednoho z osmi velkých leknínů.
 Cena veleskoku se určuje před začátkem hry. Doporučená cena je 10 kreditů; pro rychlou hru lze zvolit nižší, pro náročnější nebo týmovou hru vyšší.
 Veleskok nahrazuje základní skok: hráč, který stojí na velkém leknínu a má dost kreditů, cenu zaplatí do banku a doskočí na Kouzelný leknín.
+V digitální verzi se v takové chvíli Kouzelný leknín rozzáří – stačí na něj kliknout (ťuknout).
 
 8. SKOK NA HLAVU
 Pokud hráč skočí na pole obsazené jiným hráčem:
 * sebere mu 1 kredit,
 * poté sklouzne na libovolné sousední pole.
-Toto sklouznutí může způsobit další interakci s jiným hráčem. Každého konkrétního hráče lze během jednoho tahu skočit maximálně jednou.
+Toto sklouznutí může způsobit další interakci s jiným hráčem.
+* Na stejného hráče lze během jednoho tahu skočit nejvýše jednou – na pole, kde stojí žába, na kterou se už v tomto tahu skákalo, se skočit ani sklouznout nesmí.
+* Na konci tahu nesmí nikdy stát dvě žáby na jednom poli.
+* Uskočí-li napadený Kvákrobatikou (nebo ho Žabiják pošle na START), pole se uvolní: útočník na něm zůstane a nesklouzává.
 
 9. KOUZLA
-Kouzla lze používat kdykoli během hry, pokud jejich účinek neurčuje jinak. Každé kouzlo je jednorázové; po použití se karta odhodí. Kartu kouzla hráč získá na poli Houba. Pasivní kouzla (Bublina, Helma, Plováky, Kvákrobatika) se použijí ve chvíli, kdy nastane situace, na kterou reagují.
+Kouzla lze používat kdykoli během hry, pokud jejich účinek neurčuje jinak. Každé kouzlo je jednorázové; po použití se karta odhodí. Kartu kouzla hráč získá na poli Houba a nahlas oznámí, které kouzlo získal. Pasivní kouzla (Bublina, Helma, Plováky, Kvákrobatika) se použijí ve chvíli, kdy nastane situace, na kterou reagují.
 - Volavka ×1: Útok zasáhne oblast 5 × 5 polí. Zasažení hráči se vrátí na START. Sesílající získá veškerý hmyz z oblasti.
 - Štika ×2: Útok zasáhne oblast 3 × 3 polí. Zasažení hráči se vrátí na START. Sesílající získá veškerý hmyz z oblasti.
 - Hurikán ×1: Všichni předají své karty kouzel o jednoho hráče po směru hodinových ručiček.
@@ -86,16 +90,16 @@ Kouzla lze používat kdykoli během hry, pokud jejich účinek neurčuje jinak.
 - Duhová vážka ×1: Vezmi si 1 vážku z banku.
 - Záměna ×2: Prohoď si místo s hráčem, na kterého ukážeš.
 - Plováky ×2 (pasivní): Když tě má Vodní vír přemístit, můžeš zůstat na svém poli.
-- Kvákrobatika ×2 (pasivní): Když ti jiný hráč skáče na hlavu, můžeš uskočit o 1 pole kamkoli (ne do vody) a vyhnout se následkům.
+- Kvákrobatika ×2 (pasivní): Když ti jiný hráč skáče na hlavu, můžeš uskočit o 1 pole kamkoli (ne do vody, ne na jinou žábu) a vyhnout se následkům. Útočník zůstane na uvolněném poli a znovu na tebe v tomto tahu skočit nemůže.
 - Kraken ×1: Všichni ostatní hráči odevzdají 1 kredit do banku.
 - Eko katastrofa ×1: Veškerý hmyz na herním plánu zmizí. Hmyz, který už vlastní hráči, zůstává.
 - Žabiják ×4: Každá žába, na jejíž hlavu do konce tohoto tahu skočíš, se vrací na START.
 Volavka a Štika nezasahují hráče, který je seslal.
 
 10. FÉR HRA
-Aby měl šanci každý, používají se tato doporučená pravidla (Žabí štěstí lze před hrou vypnout):
+Aby měl šanci každý, používají se tato doporučená pravidla:
 * Kostka rozhoduje, kdo začne, a startovní pole si hráči vybírají v opačném pořadí tahů.
-* Žabí štěstí: kdo má na začátku svého tahu o 5 a více kreditů méně než vedoucí hráč, dostane z banku 1 mouchu.
+* Dohrávání na pořadí: hra nekončí prvním vítězem – ostatní mohou hrát dál o další místa.
 * Akce kdykoli: světluškou nebo kouzlem může kdokoli zasáhnout i do cizího tahu – vedoucí žába se nikdy necítí v bezpečí.
 * Časový limit (volitelný, hlavně pro online hru): kdo se nerozhodne včas, za toho rozhodne žabí intuice.
 
@@ -104,18 +108,21 @@ Vítězem se stává první hráč, který:
 * získá potřebný počet kreditů,
 * provede veleskok z velkého leknínu,
 * doskočí na Kouzelný leknín.
+Dohrávání na pořadí: kdykoli někdo doskočí na Kouzelný leknín, hráči se rozhodnou, zda ostatní pokračují o další místa (C), začnou novou hru (N), nebo hru opustí (Q). Žába v cíli už do hry nezasahuje – nehraje, nelze na ni útočit a nemůže kouzlit. Když v jezeře zůstane poslední žába, bere poslední místo a hra končí.
 
 12. DIGITÁLNÍ VERZE – OVLÁDÁNÍ
-Skoky, cíle vírů, trampolín i kouzel se vybírají kliknutím (ťuknutím) na zvýrazněná pole. Hráče pro útok lze vybrat v tabulce i přímo na plánu.
+Skoky, cíle vírů, trampolín i kouzel se vybírají kliknutím (ťuknutím) na zvýrazněná pole. Veleskok = klik na zářící Kouzelný leknín. Hráče pro útok lze vybrat v tabulce i přímo na plánu. Na začátku si každý hráč vybere svou žábu (avatara).
 - Mezerník: Akce – použít světlušku nebo kouzlo (otevřít / zavřít nabídku)
-- Enter: Hodit kostkami / veleskok / další hráč
+- Enter: Hodit kostkami / další hráč
+- C: Po doskoku na Kouzelný leknín: pokračovat – dohrát na pořadí
 - S: Zvukové efekty zap / vyp
 - M: Podkladová hudba zap / vyp
 - R: Kompletní pravidla
 - N: Nová hra
-- Q: Ukončit hru
+- Q: Opustit hru
 - Esc: Zavřít okno / zrušit rozehranou akci
-Tabulka skóre řadí hráče podle kreditů; při shodě je výš ten, kdo skóre dosáhl později, a při další shodě rozhoduje abeceda.
+Tabulka skóre řadí nahoru žáby, které už jsou v cíli (podle pořadí doskoku), ostatní podle kreditů; při shodě je výš ten, kdo skóre dosáhl později, a při další shodě rozhoduje abeceda.
+Hra na více zařízeních: přes Wi-Fi bez serveru (hostitel pozve ostatní QR kódem) nebo online přes herní server.
 
 Příjemnou žábavu!
 Žabí jezero®

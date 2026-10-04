@@ -56,7 +56,7 @@ server.listen(0, async () => {
 
     check('host-only operace odmítnuta hostovi', (await post('api/lobby', { code: host.code, token: guest.token, op: 'start' })).status === 403);
     await post('api/lobby', { code: host.code, token: host.token, op: 'addBot' });
-    await post('api/lobby', { code: host.code, token: host.token, op: 'settings', data: { leapPrice: 6, luck: true, turnSeconds: 15 } });
+    await post('api/lobby', { code: host.code, token: host.token, op: 'settings', data: { leapPrice: 6, turnSeconds: 15 } });
     await post('api/lobby', { code: host.code, token: host.token, op: 'start' });
     await sleep(150);
     check('hra začala pro oba', A.last.type === 'game' && B.last.type === 'game' && A.last.snap.players.length === 3);
