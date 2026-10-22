@@ -1,45 +1,21 @@
-# Žabí jezero® – verze 2
+# Žabí jezero® – verze 2.2
 
-Digitální verze rodinné deskové hry **Žabí jezero** pro **1–8 hráčů**: na jednom
-zařízení (s počítačovými žábami i bez nich), **přes Wi-Fi bez serveru** i **online** –
-každý na svém telefonu, tabletu nebo počítači. Pravidla jsou v `game rules.txt` (pro deskovou hru) a ve hře
-pod klávesou **R**; obojí vzniká z jednoho zdroje `js/rules.js`.
+Digitální verze rodinné deskové hry **Žabí jezero** pro **1–8 hráčů na jednom
+zařízení** – jeden hráč proti počítačovým žábám, nebo více hráčů, kteří se u telefonu,
+tabletu či počítače střídají. Pravidla jsou v `game rules.txt` (pro deskovou hru) a ve
+hře pod klávesou **R**; obojí vzniká z jednoho zdroje `js/rules.js`.
+
+**Hrát:** https://jakub-klima.github.io/frog-lake/ (GitHub Pages, verze z větve `main`)
 
 ## Spuštění
 
-**Hra na jednom zařízení** – stačí otevřít `index.html` v prohlížeči (funguje i přes
-`file://`, bez instalace a bez internetu).
+Stačí otevřít odkaz výše, nebo `index.html` v prohlížeči (funguje i přes `file://`,
+bez instalace a bez internetu).
 
-**Hra přes Wi-Fi bez serveru** – stačí hru otevřít z veřejné adresy
-**https://jakub-klima.github.io/frog-lake/** (GitHub Pages, verze z větve `main`):
-
-1. Hostitel (tablet, notebook nebo telefon) zvolí **Přes Wi-Fi → Založit hru**
-   a v místnosti klikne na **Pozvat hráče**.
-2. Hráč naskenuje QR kód fotoaparátem telefonu – otevře se mu hra s pozvánkou.
-   Zadá jméno a klikne na **Připojit se**; ukáže se mu QR kód odpovědi.
-3. Hostitel odpověď naskenuje (**Naskenovat odpověď**) – a je připojeno.
-   Kdo nemá po ruce fotoaparát, může odkaz i odpověď zkopírovat a poslat zprávou.
-
-Hru drží prohlížeč hostitele, data jdou přímo mezi zařízeními přes WebRTC
-(nejlépe ve stejné Wi-Fi; některé sítě pro hosty vzájemné spojení zařízení blokují).
-Odpojenou žábu převezme autopilot; přes **📲 Pozvat** v tabulce skóre se hráč
-během hry vrátí ke své žábě. Hostitel nesmí zavřít ani obnovit stránku – hra by skončila.
-
-**Online hra přes server** – potřebuje jen [Node.js 18+](https://nodejs.org), žádné další balíčky:
-
-```
-node server.js          # nebo: npm start
-# 🐸 Žabí jezero běží na http://localhost:8080
-#    ve stejné síti (telefon, tablet): http://192.168.x.x:8080
-```
-
-Na adrese z výpisu klikni na **Online s přáteli → Založit novou místnost** a pošli
-ostatním odkaz nebo pětimístný kód. Hostitel může volná místa doplnit počítači,
-nastavit cenu veleskoku a časový limit a spustí hru.
-
-Pro hraní přes internet stačí `server.js` nasadit na libovolný hosting s Node.js
-(Render, Railway, Fly.io, VPS…); port se bere z proměnné `PORT`. Statický hosting
-(např. GitHub Pages) zvládne hru na jednom zařízení a hru přes Wi-Fi.
+Hra na více zařízeních (přes Wi-Fi bez serveru a online přes `server.js`) je zatím
+**vypnutá** – v menu se nenabízí. Kód zůstává v repozitáři (`js/room.js`, `js/net.js`,
+`js/p2p.js`, `server.js`); znovu ji zapne `FL.NETWORK = true` (např. řádek
+`<script>FL = { NETWORK: true }</script>` před ostatními skripty v `index.html`).
 
 ## Ovládání
 
@@ -52,7 +28,7 @@ a dají se i proklikat (na telefonu):
 
 | Klávesa | Funkce |
 |---|---|
-| **Mezerník** | Akce – kdokoli kdykoli použije světlušku nebo kouzlo (zap/vyp nabídky) |
+| **Mezerník** | Akce – zastaví hru až na 10 s a otevře nabídku světlušek a kouzel (znovu = pokračovat) |
 | **Enter** | Hodit kostkami / další hráč |
 | **C** | Po doskoku na Kouzelný leknín: ostatní hrají dál o pořadí |
 | **S** | Zvukové efekty zap/vyp |
@@ -64,8 +40,9 @@ a dají se i proklikat (na telefonu):
 
 Po stisku mezerníku se v nabídce vybere hráč (v nabídce, v tabulce nebo kliknutím
 na jeho žábu), pak *Zaútočit světluškou* (cíl se opět vybere v tabulce nebo na
-plánu – vezme mu 1 kredit) nebo kouzlo ze seznamu jeho karet. Online hraje každý
-jen za sebe a cizí karty nevidí.
+plánu – vezme mu 1 kredit) nebo kouzlo ze seznamu jeho karet. Po dobu Akce hra
+stojí (počítačové žáby nehrají, nikdo nehází ani neskáče) – nejdéle 10 sekund, nebo
+dokud někdo akci neprovede či nabídku nezavře.
 
 ## Obrazovka hry
 
@@ -86,7 +63,7 @@ jen za sebe a cizí karty nevidí.
 * Hmyz, který dopadne na pole se žábou, žába **okamžitě získá**.
 * Hmyz, který dopadne na **Kouzelný leknín**, získá hráč, který hodil kostkami
   (při dvanáctce si ho tak hráč může „poslat“ sám sobě).
-* **Bahno** je konečně na plánu – tmavé bažiny na břehu vedle Hub a STARTů
+* **Bažina** je konečně na plánu – tmavé bažiny na břehu vedle Hub a STARTů
   (pozice 1, 5, 7, 11 každé strany). Kdo do něj skočí, příští tah nehází ani neskáče.
 * Víry a trampolíny – cíl se vybírá kliknutím na zvýrazněné pole.
 * Světluška – útok na libovolného hráče s kreditem (vezme mu 1 kredit), kdykoli.
@@ -116,9 +93,26 @@ jen za sebe a cizí karty nevidí.
 * Hra přes Wi-Fi bez serveru (WebRTC + QR kódy).
 * Žabí štěstí je z nabídky odebrané (v enginu zůstává vypnuté, `luck: true` ho zapne).
 
-**Zvuky** – syntetizované přímo v prohlížeči (hod, skok, hmyz, kouzla, voda, bahno,
+**Zvuky** – syntetizované přímo v prohlížeči (hod, skok, hmyz, kouzla, voda, bažina,
 vír, trampolína, Vodník, vítězství) a tichá podkladová hudba. Žádné zvukové soubory;
 skutečné nahrávky lze doplnit v dalším kroku v `js/audio.js`.
+
+**Verze 2.2**
+* Menu jen pro hru na jednom zařízení (Wi-Fi a online dočasně vypnuté).
+* Pole „Bahno“ přejmenované na **Bažina**.
+* **Akce zastaví hru** až na 10 s (nebo do provedení akce / zavření nabídky),
+  aby šlo v klidu použít světlušky a kouzla; na plánu je ⏸ a odpočet.
+* Ve výsledcích se u žab v cíli ukazují **kredity těsně před veleskokem**.
+* **Statistiky hry** pod výsledky po každém doskoku: počet kol, kolik přiletělo much,
+  světlušek a vážek, kolikrát zasáhl Vodník; u každého hráče sebraná kouzla a hmyz,
+  použitá kouzla a světlušky a uskákaná vzdálenost v polích (Vodníkův přenos ani
+  návraty na START se nepočítají).
+* **Kvákrobatika**: úskok i do vody (pak volba STARTu); pole, kam žába uskočí, platí
+  jako po každém skoku – sebere hmyz, vír i trampolína ji přenesou, houba dá kouzlo,
+  bažina zdrží.
+* **Štika a Volavka** pošlou na START i sesílajícího, pokud stojí v oblasti.
+* **Žabiják**: napadená žába nejdřív odevzdá 1 kredit, pak jde na START (pravidla
+  i hláška to nově říkají výslovně).
 
 ## Struktura
 
@@ -148,7 +142,7 @@ JSON, cizí karty skryté). UI kreslí jen ze snímku, takže je stejné lokáln
 ## Rozhodnutí, která je dobré potvrdit
 
 1. **Vodník Lojzík** je událost hodu – hráč se po teleportu ještě normálně pohne.
-2. **Bahno**: kdo do něj zapadne ještě před svým skokem (po Vodníkovi), přijde
+2. **Bažina**: kdo do ní zapadne ještě před svým skokem (po Vodníkovi), přijde
    i o zbytek tahu – a vynechá i tah příští.
 3. **Útok světluškou** bere 1 kredit (napadený odevzdá hmyz za 1 kredit, vážku si
    rozmění); útočník dostane mouchu z banku. Helma proti světlušce nechrání.
@@ -157,8 +151,9 @@ JSON, cizí karty skryté). UI kreslí jen ze snímku, takže je stejné lokáln
    trampolíně. Když napadený uskočí Kvákrobatikou nebo ho Žabiják pošle na START,
    útočník na uvolněném poli zůstane a vyhodnotí se jeho účinek.
 5. **Žába v cíli** už do hry nezasahuje (nehraje, nelze na ni útočit, nekouzlí).
-   Při dohrávání o pořadí rozhoduje online/Wi-Fi o pokračování jen hostitel.
-6. **Vážka ↔ mouchy** se mění 1 : 2. Volavka a Štika nezasahují sesílajícího.
+   Při hře na více zařízeních (zatím vypnuté) rozhoduje o pokračování jen hostitel.
+6. **Vážka ↔ mouchy** se mění 1 : 2. Volavka a Štika zasáhnou i sesílajícího, pokud
+   stojí v zasažené oblasti (může se chránit Bublinou).
 7. **Dvanáctka** na D12 dovoluje vybrat i Kouzelný leknín nebo vlastní pole – hmyz pak
    získá sám házející. Je to šťastný hod; kdyby to bylo moc silné, stačí ve
    `rollDice` z volby vyřadit 6-6.

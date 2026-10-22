@@ -138,7 +138,7 @@ console.log('Pravidla:');
   check('napadený dostane nabídku Kvákrobatiky', g.pending && g.pending.tag === 'passive' && g.pending.actorId === 1);
   g.apply({ type: 'option', i: 0 }, 1);              // použít
   check('uskočení – výběr pole', g.pending && g.pending.tag === 'dodge');
-  const k = g.pending.cells[0].split(',').map(Number);
+  const k = g.pending.cells.map(x => x.split(',').map(Number)).find(([r, c]) => g.tile(r, c).type === T.LILY);
   g.apply({ type: 'cell', r: k[0], c: k[1] }, 1);
   check('útočník po uskočení nesklouzává a zůstává na poli', a.pos.r === 4 && a.pos.c === 3 && g.phase === 'done');
   check('žáby nestojí na stejném poli a kredit zůstal', !(a.pos.r === b.pos.r && a.pos.c === b.pos.c) && g.credits(b) === 2);
@@ -181,6 +181,115 @@ console.log('Pravidla:');
   g.apply({ type: 'cell', r: 6, c: 6 }, 2);
   check('druhý doskok = 2. místo, poslední žába bere 3. místo, konec', c.place === 2 && b.place === 3 && g.over);
   check('tabulka řadí podle umístění', FL.rankPlayers(g.snapshot().players).map(p => p.place).join() === '1,2,3');
+  g.clearAutoPass();
+}
+
+// --- Kvákrobatika: úskok i do vody, sebere hmyz, pole platí ---
+{
+  const g = newGame(2);
+  const [a, b] = g.players;
+  g.cur = 0; g.phase = 'move'; g.pending = null;
+  a.pos = { r: 4, c: 2 }; b.pos = { r: 4, c: 3 };
+  b.hand.push({ uid: 'k1', id: 'kvakrobatika' }, { uid: 'k2', id: 'kvakrobatika' });
+  g.addInsect(5, 4, 'dragonfly');
+  g.startMovePhase();
+  g.apply({ type: 'cell', r: 4, c: 3 }, 0);
+  g.apply({ type: 'option', i: 0 }, 1);
+  check('úskok nabízí i vodu', g.pending.cells.includes('3,2'));
+  g.apply({ type: 'cell', r: 5, c: 4 }, 1);
+  check('úskokem žába sebere hmyz z pole', b.insects.dragonfly === 1 && !g.insectsAt(5, 4));
+  g.clearAutoPass();
+
+  const h = newGame(2);
+  const [x, y] = h.players;
+  h.cur = 0; h.phase = 'move'; h.pending = null;
+  x.pos = { r: 4, c: 2 }; y.pos = { r: 4, c: 3 };
+  y.hand.push({ uid: 'k1', id: 'kvakrobatika' });
+  h.startMovePhase();
+  h.apply({ type: 'cell', r: 4, c: 3 }, 0);
+  h.apply({ type: 'option', i: 0 }, 1);
+  h.apply({ type: 'cell', r: 3, c: 2 }, 1);           // do vody
+  check('úskok do vody → napadený si vybírá START', h.pending && h.pending.tag === 'start' && h.pending.actorId === 1);
+  const st = h.pending.cells[0].split(',').map(Number);
+  h.apply({ type: 'cell', r: st[0], c: st[1] }, 1);
+  check('po výběru startu pokračuje tah útočníka', y.pos.r === st[0] && x.pos.r === 4 && x.pos.c === 3 && h.phase === 'done');
+  h.clearAutoPass();
+}
+
+// --- Štika zasáhne i sesílajícího ---
+{
+  const g = newGame(3);
+  const [a, b] = g.players;
+  g.cur = 2; g.phase = 'roll'; g.pending = null;
+  a.pos = { r: 5, c: 2 }; b.pos = { r: 5, c: 3 };
+  a.hand.push({ uid: 's1', id: 'stika' });
+  g.apply({ type: 'card', uid: 's1', who: 0 }, 0);
+  g.apply({ type: 'cell', r: 5, c: 3 }, 0);
+  const askedStart = [];
+  for (let i = 0; i < 4 && g.pending && g.pending.tag === 'start'; i++) {
+    askedStart.push(g.pending.actorId);
+    const k = g.pending.cells[0].split(',').map(Number);
+    g.apply({ type: 'cell', r: k[0], c: k[1] }, g.pending.actorId);
+  }
+  check('Štika pošle na START zasaženého i sesílajícího', askedStart.sort().join() === '0,1', askedStart.join());
+  g.clearAutoPass();
+}
+
+// --- Žabiják: kredit + START ---
+{
+  const g = newGame(2);
+  const [a, b] = g.players;
+  g.cur = 0; g.phase = 'move'; g.pending = null;
+  a.pos = { r: 4, c: 2 }; b.pos = { r: 4, c: 3 }; b.insects.fly = 3;
+  a.hand.push({ uid: 'z1', id: 'zabijak' });
+  g.startMovePhase();
+  g.apply({ type: 'card', uid: 'z1', who: 0 }, 0);
+  g.apply({ type: 'cell', r: 4, c: 3 }, 0);
+  check('Žabiják: napadený odevzdá 1 kredit', g.credits(b) === 2 && a.insects.fly === 1);
+  check('Žabiják: napadený si vybírá START', g.pending && g.pending.tag === 'start' && g.pending.actorId === 1);
+  g.clearAutoPass();
+}
+
+// --- Akce zastaví hru až na 10 s ---
+{
+  const g = newGame(2, { pauseMs: 40 });
+  const [a] = g.players;
+  g.cur = 0; g.phase = 'roll'; g.pending = null;
+  a.insects.firefly = 1; g.players[1].insects.fly = 2;
+  g.apply({ type: 'pause', who: 0 }, null);
+  g.apply({ type: 'roll' }, null);
+  check('během pauzy se nehází', g.paused && !g.dice);
+  g.apply({ type: 'resume' }, null);
+  check('pokračovat ukončí pauzu', !g.paused);
+  g.apply({ type: 'pause', who: 0 }, null);
+  g.apply({ type: 'firefly', who: 0 }, null);
+  check('provedení akce ukončí pauzu', !g.paused && g.pending && g.pending.tag === 'firefly');
+  g.apply({ type: 'cancel' }, null);
+  g.apply({ type: 'pause', who: null }, null);
+  setTimeout(() => {
+    check('pauza po vypršení času sama skončí', !g.paused && g.logLines.some(l => /vypršel/.test(l.msg)));
+    g.clearAutoPass();
+  }, 80);
+}
+
+// --- statistiky a kredity před veleskokem ---
+{
+  const g = newGame(2);
+  const a = g.players[0];
+  g.cur = 0; g.phase = 'roll'; g.pending = null;
+  g.placeEvent('fly', 6, 6, false);                  // na leknín → házející
+  check('statistika: přiletělá moucha a sebraná moucha', g.stats.arrived.fly === 1 && a.stats.got.fly === 1);
+  g.pending = null; g.phase = 'move';
+  a.pos = { r: 4, c: 4 }; a.insects.dragonfly = 6;
+  g.startMovePhase();
+  g.apply({ type: 'cell', r: 3, c: 4 }, 0);
+  g.nextPlayer(); g.clearAutoPass();
+  g.cur = 0; g.phase = 'move'; g.pending = null;
+  a.pos = { r: 4, c: 4 };
+  g.startMovePhase();
+  g.apply({ type: 'cell', r: 6, c: 6 }, 0);
+  check('kredity před veleskokem se uloží', a.finalCredits === 13 && g.credits(a) === 3, a.finalCredits + '/' + g.credits(a));
+  check('uskákaná vzdálenost (1 skok + veleskok 2)', a.stats.dist === 3, a.stats.dist);
   g.clearAutoPass();
 }
 
@@ -279,5 +388,8 @@ for (const n of [1, 2, 8]) {
   check('60 her po 8 žabách: nikdy dvě žáby na jednom poli na konci tahu', clashes === 0, clashes + '×');
 }
 
-console.log(failed ? `\n${failed} test(ů) selhalo.` : '\nVše v pořádku.');
-process.exit(failed ? 1 : 0);
+// počká na testy s časovačem (pauza pro Akci)
+setTimeout(() => {
+  console.log(failed ? `\n${failed} test(ů) selhalo.` : '\nVše v pořádku.');
+  process.exit(failed ? 1 : 0);
+}, 300);

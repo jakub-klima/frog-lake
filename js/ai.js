@@ -76,7 +76,7 @@
     g.areaCells(r, c, size).forEach(cell => {
       v += 2 * valueOf(g.insectsAt(cell.r, cell.c));
       g.at(cell.r, cell.c).forEach(o => {
-        if (o === me) return;
+        if (o === me) { v -= 8; return; }       // Štika i Volavka zasáhnou i sesílajícího
         v += 2 + g.credits(o) * 0.4 + (o.hand.some(h => h.id === 'bublina') ? -2 : 0);
       });
     });
@@ -268,14 +268,15 @@
     let timer = null, sig = null, tries = 0, stopped = false;
 
     const waitingFor = () => {
-      if (g.halted) return null;
+      if (g.halted || g.paused) return null;     // při Akci (pauze) se nehraje
       if (g.pending) return g.pending.actorId;
       if (g.phase === 'roll') return g.cur;
       return null;
     };
-    const signature = () => g.pending
+    const baseSignature = () => g.pending
       ? 'p' + g.pending.seq
       : [g.phase, g.cur, g.round, g.dice ? g.dice.seq : 0].join(':');
+    const signature = () => (g.paused ? 'P:' : '') + baseSignature();
 
     function clear() { if (timer) { clearTimeout(timer); timer = null; } }
 

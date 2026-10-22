@@ -36,6 +36,10 @@
   const avatarImg = (idx, cls) =>
     `<img class="${cls || 'av'}" src="${FL.FROG_IMG(idx)}" alt="" style="--ring:${FL.FROG_COLORS[idx]}">`;
 
+  /* Hra na více zařízeních (Wi-Fi bez serveru, online server) je zatím vypnutá –
+   * hraje se jen na jednom zařízení. Kód zůstává; true ji v menu znovu ukáže. */
+  const NETWORK = FL.NETWORK === true;
+
   const DEFAULT_NAMES = ['Kvákal', 'Skokan', 'Rosnička', 'Bahňák', 'Zelenka', 'Pulec', 'Ropušák', 'Blatnice'];
   const BOT_NAMES = ['Robo-Kvak', 'Čip-Žabka', 'Kvak 3000', 'Bit-Skokan', 'Pixel-Pulec', 'Turbo-Rosnička', 'Data-Ropucha', 'Mega-Kuňka'];
 
@@ -226,6 +230,8 @@
     }
     processLog(snap);
     if (S.actionUI && !snap.canAct) closeAction(true);
+    if (S.actionUI && S.wasPaused && !snap.paused) closeAction(true);   // čas na Akci vypršel
+    S.wasPaused = !!snap.paused;
     if (snap.phase !== 'won' && !snap.over && $('modal').classList.contains('finish-modal')) hideModal();
     render();
   }
@@ -313,7 +319,7 @@
       return { set, mode: 'who' };
     }
     const pend = s.pending;
-    if (!pend || !controls(pend.actorId)) return { set, mode: null };
+    if (s.paused || !pend || !controls(pend.actorId)) return { set, mode: null };
     if (pend.kind === 'cell') pend.cells.forEach(k => set.add(k));
     if (pend.kind === 'player') pend.players.forEach(id => { const p = s.players[id]; if (p.pos) set.add(FL.key(p.pos.r, p.pos.c)); });
     return { set, mode: pend.kind };
@@ -377,7 +383,7 @@
   function renderMagic(s) {
     const glow = $('magicGlow');
     const p = s.pending;
-    const ready = !halted(s) && p && p.tag === 'move' && p.leap && controls(p.actorId);
+    const ready = !halted(s) && !s.paused && p && p.tag === 'move' && p.leap && controls(p.actorId);
     const other = !ready && !halted(s) && p && p.tag === 'move' && p.leap;
     glow.classList.toggle('ready', !!ready);
     glow.classList.toggle('charged', !!other);
@@ -502,6 +508,10 @@
       text = `${MEDAL(lastFinisher.place)} ${lastFinisher.name} je na Kouzelném leknínu! ` +
         (decides() ? 'C = dohrát na pořadí, N = nová hra, Q = opustit hru.' : 'Hostitel rozhoduje, jak se bude pokračovat…');
       hint.classList.add('mine');
+    } else if (s.paused) {
+      const by = s.paused.by != null ? s.players[s.paused.by].name : null;
+      text = `⏸ Hra stojí – ${by ? 'Akci vyvolává ' + by : 'Akce'}. Použijte světlušky a kouzla; hra pokračuje po akci, tlačítkem nebo za chvilku sama.`;
+      hint.classList.add('mine');
     } else if (s.pending) {
       const who = s.players[s.pending.actorId];
       if (controls(who.id)) { text = '👉 ' + s.pending.hint; hint.classList.add('mine'); }
@@ -515,7 +525,26 @@
     hint.textContent = text;
 
     renderTimer(s);
+    renderPause(s);
+    $('board').classList.toggle('paused', !!s.paused);
     renderActions(s);
+  }
+
+  /* Odpočet pauzy pro Akci (max. 10 s). */
+  let pauseRaf = null;
+  function renderPause(s) {
+    const box = $('pauseBar');
+    cancelAnimationFrame(pauseRaf);
+    if (!s.paused) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    const end = S.snapAt + s.paused.left;
+    const tick = () => {
+      const left = Math.max(0, end - Date.now());
+      box.querySelector('i').style.width = (left / s.paused.total * 100) + '%';
+      box.querySelector('span').textContent = '⏸ ' + Math.ceil(left / 1000) + ' s';
+      if (left > 0) pauseRaf = requestAnimationFrame(tick);
+    };
+    tick();
   }
 
   /* Hlášky o důležitých událostech – v panelu pod plánem, plán nezakrývají. */
@@ -549,7 +578,7 @@
   function renderTimer(s) {
     const box = $('timer');
     cancelAnimationFrame(timerRaf);
-    if (!s.deadline || halted(s)) { box.classList.add('hidden'); return; }
+    if (!s.deadline || halted(s) || s.paused) { box.classList.add('hidden'); return; }
     box.classList.remove('hidden');
     const end = S.snapAt + s.deadline.left;
     const total = s.deadline.total;
@@ -579,6 +608,11 @@
       if (s.phase === 'won' && decides()) a.append(mkBtn('▶ Dohrát na pořadí (C)', 'primary main', continueGame));
       a.append(mkBtn('🔄 Nová hra (N)', s.over ? 'primary main' : '', askNewGame));
       a.append(mkBtn('🏠 Opustit hru (Q)', 'ghost', askQuit));
+      return;
+    }
+    if (s.paused) {
+      a.append(mkBtn('▶ Pokračovat ve hře', 'primary main', () => { closeAction(true); dispatch({ type: 'resume' }); }));
+      a.append(mkBtn('✨ Akce (mezerník)', 'action-btn', () => { if (!S.actionUI) toggleAction(); }));
       return;
     }
     if (s.phase === 'setup' && S.mode === 'local' && pend && controls(pend.actorId))
@@ -612,6 +646,9 @@
   }
 
   // ================== TABULKA SKÓRE ==================
+  /* U žab v cíli se ukazují kredity těsně před zaplacením veleskoku. */
+  const shownCredits = p => (p.done && p.finalCredits != null ? p.finalCredits : p.credits);
+
   function renderScore(s) {
     const t = $('score');
     const price = s.settings.leapPrice;
@@ -630,16 +667,17 @@
       if (p.id === actorId && actorId !== s.cur && live) cls.push('deciding');
       if ((pickable && pickable.has(p.id)) || (who && who.has(p.id))) cls.push('pickable');
       if (p.done) cls.push('winner');
-      const pct = Math.min(100, p.credits / price * 100);
+      const cr = shownCredits(p);
+      const pct = Math.min(100, cr / price * 100);
       const marks = (p.id === s.cur && live && !p.done ? '<span class="mk turn-mk" title="Na tahu">▶</span>' : '') +
         (p.bot ? '<span class="mk" title="Počítač">🤖</span>' : '') +
         (p.offline ? '<span class="mk" title="Odpojen – hraje autopilot">📴</span>' : '') +
-        (p.skipTurn ? '<span class="mk" title="V bahně – příští tah vynechá">💤</span>' : '') +
+        (p.skipTurn ? '<span class="mk" title="V bažině – příští tah vynechá">💤</span>' : '') +
         (S.mode === 'remote' && p.id === S.mySeat ? '<span class="mk you">ty</span>' : '');
       const rk = p.done || (s.over && p.place) ? MEDAL(p.place) : (rank + 1) + '.';
       return `<tr class="${cls.join(' ')}" data-id="${p.id}">
         <td class="nm"><div class="nmw"><span class="rk">${rk}</span>${avatarImg(p.idx)}<span class="n">${esc(p.name)}</span>${marks}</div></td>
-        <td class="cr"><b>${p.credits}</b><span class="bar"><i style="width:${pct}%"></i></span></td>
+        <td class="cr"${p.done ? ' title="Kredity těsně před veleskokem"' : ''}><b>${cr}</b><span class="bar"><i style="width:${pct}%"></i></span></td>
         <td class="num">${p.insects.dragonfly}</td>
         <td class="num">${p.insects.firefly}</td>
         <td class="num">${p.insects.fly}</td>
@@ -809,10 +847,13 @@
     }
     if (S.mode === 'remote') {
       if (s.players[S.mySeat].done) return notify('Tvoje žába už je v cíli.', 'sys');
+      dispatch({ type: 'pause', who: S.mySeat });
       return openActionFor(S.mySeat);
     }
     const list = eligiblePlayers(s);
     if (!list.length) { notify('Nikdo teď nemá světlušku ani kouzlo.', 'sys'); return; }
+    // Akce zastaví hru (max. 10 s), aby šlo v klidu kouzlit
+    dispatch({ type: 'pause', who: list.length === 1 ? list[0].id : null });
     if (list.length === 1) return openActionFor(list[0].id);
     S.actionUI = { step: 'who' };
     A.play('click');
@@ -825,11 +866,16 @@
     render();
   }
 
+  /* silent = zavírá se kvůli provedené akci nebo změně stavu (pauzu ukončí engine).
+   * Jinak hráč nabídku zavřel sám – hra hned pokračuje. */
   function closeAction(silent) {
     if (!S.actionUI) return;
     S.actionUI = null;
     $('actionMenu').classList.add('hidden');
-    if (!silent) render();
+    if (!silent) {
+      if (S.snap && S.snap.paused) dispatch({ type: 'resume' });
+      render();
+    }
   }
 
   function renderAction(s) {
@@ -917,7 +963,7 @@
 
   function legendHtml() {
     return '<h2>Kde co na plánu najdeš</h2><div class="legend">' +
-      '<div><b>Bahno</b> – tmavé bažiny na břehu hned vedle Hub a STARTů (pozice 1, 5, 7 a 11 každé strany).</div>' +
+      '<div><b>Bažina</b> – tmavé bažiny na břehu hned vedle Hub a STARTů (pozice 1, 5, 7 a 11 každé strany).</div>' +
       '<div><b>Trampolína</b> – černý kruh v oranžovém rámu vedle STARTu.</div>' +
       '<div><b>Voda</b> – modrá hladina bez leknínu (rohy jezera a prstenec kolem Kouzelného leknínu).</div>' +
       '<div><b>Vodní vír</b> – zvířená voda na okrajích jezera. Najeď myší na pole a uvidíš jeho šipky.</div>' +
@@ -975,7 +1021,8 @@
       `<i style="left:${Math.random() * 100}%;animation-delay:${(Math.random() * 1.2).toFixed(2)}s;background:${FL.FROG_COLORS[i % 8]}"></i>`).join('');
     const rows = ranking.map(p => {
       const place = p.done || (s.over && p.place) ? MEDAL(p.place) + ' ' + p.place + '.' : '…';
-      return `<li class="${p.done ? 'done' : ''}"><span class="pl">${place}</span>${avatarImg(p.idx)}<b>${esc(p.name)}</b><span class="kr">${p.credits} kr.</span></li>`;
+      return `<li class="${p.done ? 'done' : ''}"><span class="pl">${place}</span>${avatarImg(p.idx)}<b>${esc(p.name)}</b>` +
+        `<span class="kr"${p.done ? ' title="Kredity těsně před veleskokem"' : ''}>${shownCredits(p)} kr.</span></li>`;
     }).join('');
     const canC = s.phase === 'won' && !s.over;
     setTimeout(() => {
@@ -985,6 +1032,7 @@
         <h2>${first ? '🏆 ' + esc(last.name) + ' vyhrává!' : MEDAL(last.place) + ' ' + esc(last.name) + ' bere ' + last.place + '. místo!'}</h2>
         <p>${s.over ? 'Hra je u konce – tady je konečné pořadí.' : 'Veleskok vyšel! Chcete hrát dál o další místa?'}</p>
         <ol class="final">${rows}</ol>
+        ${statsHtml(s, ranking)}
         <div class="actions">
           ${canC ? `<button class="primary" id="finC" ${decides() ? '' : 'disabled'}>▶ Pokračovat – dohrát na pořadí (C)</button>` : ''}
           <button class="${canC ? '' : 'primary'}" id="finN">🔄 Nová hra (N)</button>
@@ -996,6 +1044,29 @@
       $('finN').onclick = () => { hideModal(); if (S.mode === 'remote' && !S.host) notify('Novou hru může spustit hostitel.', 'sys'); else newGame(); };
       $('finQ').onclick = () => { hideModal(); askQuit(); };
     }, 1300);
+  }
+
+  /* Statistiky hry pod výsledky. */
+  function statsHtml(s, ranking) {
+    const st = s.stats;
+    const ins = k => `<img class="st-ico" src="${FL.INSECTS[k].img}" alt="${FL.INSECTS[k].name}" title="${FL.INSECTS[k].name}">`;
+    const rows = ranking.map(p => {
+      const ps = p.stats;
+      return `<tr><td class="st-nm">${avatarImg(p.idx)}<span>${esc(p.name)}</span></td>
+        <td>${ps.cards}</td><td>${ps.got.fly}</td><td>${ps.got.firefly}</td><td>${ps.got.dragonfly}</td>
+        <td>${ps.spells}</td><td>${ps.fireflies}</td><td>${ps.dist}</td></tr>`;
+    }).join('');
+    return `<div class="stats"><h3>📊 Statistiky hry</h3>
+      <div class="st-sum">
+        <span>🔁 Odehraná kola: <b>${s.round}</b></span>
+        <span>Přiletělo: ${ins('fly')} <b>${st.arrived.fly}</b> ${ins('firefly')} <b>${st.arrived.firefly}</b> ${ins('dragonfly')} <b>${st.arrived.dragonfly}</b></span>
+        <span>🧜 Vodník zasáhl: <b>${st.vodnik}×</b></span>
+      </div>
+      <div class="st-wrap"><table class="st-table">
+        <thead>
+          <tr><th rowspan="2">Hráč</th><th colspan="4">Sebráno</th><th colspan="2">Použito</th><th rowspan="2" title="Uskákaná vzdálenost v polích">👣 polí</th></tr>
+          <tr><th title="Kouzla">🃏</th><th>${ins('fly')}</th><th>${ins('firefly')}</th><th>${ins('dragonfly')}</th><th title="Kouzla">🃏</th><th title="Světlušky">${ins('firefly')}</th></tr>
+        </thead><tbody>${rows}</tbody></table></div></div>`;
   }
 
   // ================== HRA PŘES SÍŤ (server i Wi-Fi) ==================
@@ -1294,7 +1365,7 @@
   // ================== START ==================
   function switchTab(t) {
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
-    ['local', 'wifi', 'online'].forEach(x => $('tab' + x[0].toUpperCase() + x.slice(1)).classList.toggle('hidden', x !== t));
+    ['local', 'wifi', 'online'].forEach(x => { const e = $('tab' + x[0].toUpperCase() + x.slice(1)); if (e) e.classList.toggle('hidden', x !== t); });
   }
 
   /* Odkaz z QR kódu pozvánky: …#wifi=ZJ1z… */
@@ -1340,6 +1411,12 @@
     window.addEventListener('beforeunload', e => {
       if (S.link && S.link.kind === 'wifi-host') { e.preventDefault(); e.returnValue = ''; }
     });
+    if (!NETWORK) {
+      // zatím jen hra na jednom zařízení – záložky Wi-Fi a online se nezobrazují
+      document.querySelector('.tabs').classList.add('hidden');
+      ['tabWifi', 'tabOnline'].forEach(id => $(id).remove());
+      return;
+    }
     if (!FL.P2P.supported()) $('wifiHost').disabled = true;
     readInviteFromUrl();
     window.addEventListener('hashchange', readInviteFromUrl);

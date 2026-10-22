@@ -45,7 +45,7 @@
             'poté pokračuje další hráč.'
           ] },
           'Kouzla a světlušky smí kterýkoli hráč použít kdykoli během hry – i mimo svůj tah (viz Kredity a hmyz a Kouzla).',
-          'Hráč, který uvízl v bahně, svůj tah vynechá – nehází kostkami ani neskáče.'
+          'Hráč, který uvízl v bažině, svůj tah vynechá – nehází kostkami ani neskáče.'
         ]
       },
       {
@@ -71,7 +71,7 @@
       {
         title: '4. Pohyb žab',
         blocks: [
-          'Každý hráč se ve svém tahu musí pohnout – vyjma tahu, který vynechává kvůli bahnu.',
+          'Každý hráč se ve svém tahu musí pohnout – vyjma tahu, který vynechává kvůli bažině.',
           'Základní skok: žába skočí na jedno sousední pole vodorovně, svisle nebo úhlopříčně.',
           'Kromě základního skoku může žábu posunout herní plán (vír, trampolína), kouzlo nebo jiný hráč.'
         ]
@@ -87,7 +87,7 @@
             ['Vodní vír', 'Žába je okamžitě přenesena o 2 pole ve směru jedné z šipek vybrané hráčem.'],
             ['Trampolína', 'Černý kruh v oranžovém rámu na břehu. Žába se okamžitě posune o 3 pole ve směru vybrané šipky podél břehu – na sousední Houbu.'],
             ['Houba', 'Hráč si vezme 1 svrchní kartu kouzla. Po dobrání posledního balíčku se odhozené karty zamíchají a vrátí do hry.'],
-            ['Bahno', 'Tmavé bažinaté plochy na břehu vedle Hub a STARTů. Hráč ztrácí svůj následující tah: nehází kostkami ani neskáče. Zapadne-li do bahna ještě před svým skokem (např. po Vodníkovi), přichází i o zbytek tahu.'],
+            ['Bažina', 'Tmavé bažiny na břehu vedle Hub a STARTů. Hráč ztrácí svůj následující tah: nehází kostkami ani neskáče. Zapadne-li do bažiny ještě před svým skokem (např. po Vodníkovi), přichází i o zbytek tahu.'],
             ['Velký leknín', 'Pole 4-4, 4-6, 4-8, 6-4, 6-8, 8-4, 8-6, 8-8. Jen z nich lze provést veleskok.'],
             ['Kouzelný leknín', 'Vítězné pole uprostřed jezera (6-6). Dosáhnout ho lze jen veleskokem.']
           ] }
@@ -127,7 +127,7 @@
           { list: [
             'Na stejného hráče lze během jednoho tahu skočit nejvýše jednou – na pole, kde stojí žába, na kterou se už v tomto tahu skákalo, se skočit ani sklouznout nesmí.',
             'Na konci tahu nesmí nikdy stát dvě žáby na jednom poli.',
-            'Uskočí-li napadený Kvákrobatikou (nebo ho Žabiják pošle na START), pole se uvolní: útočník na něm zůstane a nesklouzává.'
+            'Uskočí-li napadený Kvákrobatikou (nebo ho Žabiják pošle na START), pole se uvolní: útočník na něm zůstane, nesklouzává a vyhodnotí se účinek pole.'
           ] }
         ]
       },
@@ -137,8 +137,8 @@
           'Kouzla lze používat kdykoli během hry, pokud jejich účinek neurčuje jinak. Každé kouzlo je jednorázové; po použití se karta odhodí. Kartu kouzla hráč získá na poli Houba a nahlas oznámí, které kouzlo získal. Pasivní kouzla (Bublina, Helma, Plováky, Kvákrobatika) se použijí ve chvíli, kdy nastane situace, na kterou reagují.',
           { table: [
             ['Kouzlo', 'Účinek'],
-            ['Volavka ×1', 'Útok zasáhne oblast 5 × 5 polí. Zasažení hráči se vrátí na START. Sesílající získá veškerý hmyz z oblasti.'],
-            ['Štika ×2', 'Útok zasáhne oblast 3 × 3 polí. Zasažení hráči se vrátí na START. Sesílající získá veškerý hmyz z oblasti.'],
+            ['Volavka ×1', 'Útok zasáhne oblast 5 × 5 polí. Zasažení hráči se vrátí na START – i ten, kdo kouzlo seslal, pokud stojí v oblasti. Sesílající získá veškerý hmyz z oblasti.'],
+            ['Štika ×2', 'Útok zasáhne oblast 3 × 3 polí. Zasažení hráči se vrátí na START – i ten, kdo kouzlo seslal, pokud stojí v oblasti. Sesílající získá veškerý hmyz z oblasti.'],
             ['Hurikán ×1', 'Všichni předají své karty kouzel o jednoho hráče po směru hodinových ručiček.'],
             ['Tajfun ×1', 'Všichni předají své karty kouzel o jednoho hráče proti směru hodinových ručiček.'],
             ['Černá ruka ×2', 'Vezmi si 1 kus hmyzu od libovolného hráče.'],
@@ -151,12 +151,12 @@
             ['Duhová vážka ×1', 'Vezmi si 1 vážku z banku.'],
             ['Záměna ×2', 'Prohoď si místo s hráčem, na kterého ukážeš.'],
             ['Plováky ×2 (pasivní)', 'Když tě má Vodní vír přemístit, můžeš zůstat na svém poli.'],
-            ['Kvákrobatika ×2 (pasivní)', 'Když ti jiný hráč skáče na hlavu, můžeš uskočit o 1 pole kamkoli (ne do vody, ne na jinou žábu) a vyhnout se následkům. Útočník zůstane na uvolněném poli a znovu na tebe v tomto tahu skočit nemůže.'],
+            ['Kvákrobatika ×2 (pasivní)', 'Když ti jiný hráč skáče na hlavu, můžeš uskočit o 1 pole kamkoli (ne na jinou žábu, i do vody) a vyhnout se následkům. Pole, kam uskočíš, platí jako po každém skoku: sebereš z něj hmyz, voda tě pošle na START, vír i trampolína tě přenesou, houba dá kouzlo, bažina zdrží. Útočník zůstane na uvolněném poli a znovu na tebe v tomto tahu skočit nemůže.'],
             ['Kraken ×1', 'Všichni ostatní hráči odevzdají 1 kredit do banku.'],
             ['Eko katastrofa ×1', 'Veškerý hmyz na herním plánu zmizí. Hmyz, který už vlastní hráči, zůstává.'],
-            ['Žabiják ×4', 'Každá žába, na jejíž hlavu do konce tohoto tahu skočíš, se vrací na START.']
+            ['Žabiják ×4', 'Každá žába, na jejíž hlavu do konce tohoto tahu skočíš, ti jako při každém skoku na hlavu odevzdá 1 kredit a pak se vrací na START.']
           ] },
-          'Volavka a Štika nezasahují hráče, který je seslal.'
+          'Pozor: Volavka a Štika zasáhnou i hráče, který je seslal, pokud stojí v zasažené oblasti.'
         ]
       },
       {
@@ -166,8 +166,8 @@
           { list: [
             'Kostka rozhoduje, kdo začne, a startovní pole si hráči vybírají v opačném pořadí tahů.',
             'Dohrávání na pořadí: hra nekončí prvním vítězem – ostatní mohou hrát dál o další místa.',
-            'Akce kdykoli: světluškou nebo kouzlem může kdokoli zasáhnout i do cizího tahu – vedoucí žába se nikdy necítí v bezpečí.',
-            'Časový limit (volitelný, hlavně pro online hru): kdo se nerozhodne včas, za toho rozhodne žabí intuice.'
+            'Akce kdykoli: světluškou nebo kouzlem může kdokoli zasáhnout i do cizího tahu – vedoucí žába se nikdy necítí v bezpečí. Kdo vyvolá Akci, zastaví hru až na 10 sekund (do provedení akce), aby mohli všichni v klidu kouzlit.',
+            'Časový limit (volitelný): kdo se nerozhodne včas, za toho rozhodne žabí intuice.'
           ] }
         ]
       },
@@ -180,7 +180,8 @@
             'provede veleskok z velkého leknínu,',
             'doskočí na Kouzelný leknín.'
           ] },
-          'Dohrávání na pořadí: kdykoli někdo doskočí na Kouzelný leknín, hráči se rozhodnou, zda ostatní pokračují o další místa (C), začnou novou hru (N), nebo hru opustí (Q). Žába v cíli už do hry nezasahuje – nehraje, nelze na ni útočit a nemůže kouzlit. Když v jezeře zůstane poslední žába, bere poslední místo a hra končí.'
+          'Dohrávání na pořadí: kdykoli někdo doskočí na Kouzelný leknín, hráči se rozhodnou, zda ostatní pokračují o další místa (C), začnou novou hru (N), nebo hru opustí (Q). Žába v cíli už do hry nezasahuje – nehraje, nelze na ni útočit a nemůže kouzlit. Když v jezeře zůstane poslední žába, bere poslední místo a hra končí.',
+          'Ve výsledcích se u žab v cíli uvádějí kredity těsně před zaplacením veleskoku. Pod pořadím jsou statistiky hry: počet kol, kolik přiletělo much, světlušek a vážek, kolikrát zasáhl Vodník, a u každého hráče sebraná kouzla a hmyz, použitá kouzla a světlušky a uskákaná vzdálenost v polích.'
         ]
       },
       {
@@ -189,18 +190,18 @@
           'Skoky, cíle vírů, trampolín i kouzel se vybírají kliknutím (ťuknutím) na zvýrazněná pole. Veleskok = klik na zářící Kouzelný leknín. Hráče pro útok lze vybrat v tabulce i přímo na plánu. Na začátku si každý hráč vybere svou žábu (avatara).',
           { table: [
             ['Klávesa', 'Funkce'],
-            ['Mezerník', 'Akce – použít světlušku nebo kouzlo (otevřít / zavřít nabídku)'],
+            ['Mezerník', 'Akce – zastaví hru až na 10 s a otevře nabídku světlušek a kouzel (znovu = zavřít a pokračovat)'],
             ['Enter', 'Hodit kostkami / další hráč'],
             ['C', 'Po doskoku na Kouzelný leknín: pokračovat – dohrát na pořadí'],
             ['S', 'Zvukové efekty zap / vyp'],
             ['M', 'Podkladová hudba zap / vyp'],
             ['R', 'Kompletní pravidla'],
             ['N', 'Nová hra'],
-            ['Q', 'Opustit hru'],
+            ['Q', 'Opustit hru (zpět do menu)'],
             ['Esc', 'Zavřít okno / zrušit rozehranou akci']
           ] },
           'Tabulka skóre řadí nahoru žáby, které už jsou v cíli (podle pořadí doskoku), ostatní podle kreditů; při shodě je výš ten, kdo skóre dosáhl později, a při další shodě rozhoduje abeceda.',
-          'Hra na více zařízeních: přes Wi-Fi bez serveru (hostitel pozve ostatní QR kódem) nebo online přes herní server.'
+          'Hraje se na jednom zařízení: jeden hráč proti počítačovým žábám, nebo více hráčů, kteří se u zařízení střídají.'
         ]
       }
     ],

@@ -89,13 +89,13 @@
       'Voda je studená! {name} se vrací na START.'
     ], { name }),
     mud: name => say([
-      'Čvacht! {name} zapadá do bahna a příští tah vynechá.',
-      'Bažina nepustí! {name} trčí v bahně – příští tah stojí.',
-      '{name} se boří do bahna. Příští tah se nehraje.'
+      'Čvacht! {name} zapadá do bažiny a příští tah vynechá.',
+      'Bažina nepustí! {name} trčí v bažině – příští tah stojí.',
+      '{name} se boří do bažiny. Příští tah se nehraje.'
     ], { name }),
     mudSkip: name => say([
-      '{name} se pořád vyhrabává z bahna – tento tah vynechává.',
-      'Bahno drží! {name} tento tah nehází ani neskáče.'
+      '{name} se pořád vyhrabává z bažiny – tento tah vynechává.',
+      'Bažina drží! {name} tento tah nehází ani neskáče.'
     ], { name }),
     whirl: name => say(['{name} se dostává do Vodního víru!', 'Vír! {name} se točí dokola…'], { name }),
     whirlMove: (name, pos) => `Vír unáší hráče ${name} na pole ${pos}.`,
@@ -141,6 +141,10 @@
     exchangeSplit: name => `${name} mění v banku vážku za 2 mouchy.`,
     exchangeMerge: name => `${name} mění v banku 2 mouchy za vážku.`,
     timeout: name => `Čas vypršel – za hráče ${name} rozhodla žabí intuice.`,
+    pause: (name, sec) => name
+      ? `⏸ ${name} vyvolává Akci – hra stojí až ${sec} s, kouzlete a svěťte!`
+      : `⏸ Akce! Hra stojí až ${sec} s – kdo chce, použije světlušku nebo kouzlo.`,
+    pauseEnd: () => '▶ Čas na Akci vypršel – hra pokračuje.',
 
     // ---------- konec ----------
     leap: (name, price) => `VELESKOK! ${name} platí ${price} kreditů a letí ke Kouzelnému leknínu…`,
@@ -165,12 +169,12 @@
       twelveCol: (name, type) => `${name}, vyber sloupec, kam přiletí ${FL.INSECT_FORMS[type].one}.`,
       twelveAny: (name, type) => `${name}, vyber libovolné pole, kam přiletí ${FL.INSECT_FORMS[type].one}.`,
       slide: name => `${name}, sklouzni na libovolné sousední pole.`,
-      dodge: name => `${name}, uskoč o 1 pole kamkoli.`,
+      dodge: name => `${name}, uskoč o 1 pole kamkoli – i do vody. Pole platí jako po každém skoku.`,
       whirl: name => `${name}, Vodní vír Tě unáší – klikni na pole, kam Tě má odnést.`,
       tramp: name => `${name}, Trampolína Tě odpálí – klikni na pole, kam doskočíš.`,
       firefly: name => `${name}, koho oslní Tvá světluška? Klikni na hráče v tabulce nebo na plánu.`,
       done: () => 'Tah je u konce – hra sama předává dalšímu hráči…',
-      skip: name => `${name} trčí v bahně, tah se přeskočí…`
+      skip: name => `${name} trčí v bažině, tah se přeskočí…`
     },
 
     reasonWater: 'voda',

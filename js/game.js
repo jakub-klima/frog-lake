@@ -34,7 +34,8 @@
         autoPassMs: opts.autoPassMs != null ? opts.autoPassMs : 1400,
         luck: opts.luck === true,           // Žabí štěstí – pomoc zaostávajícím (zatím vypnuto)
         luckGap: opts.luckGap || 5,
-        turnSeconds: opts.turnSeconds || 0   // časový limit na rozhodnutí (0 = bez limitu)
+        turnSeconds: opts.turnSeconds || 0,  // časový limit na rozhodnutí (0 = bez limitu)
+        pauseMs: opts.pauseMs != null ? opts.pauseMs : 10000   // jak dlouho stojí hra při Akci
       };
       this.tiles = FL.buildBoard();
       this.insects = {};           // "r,c" -> {fly, firefly, dragonfly}
@@ -62,6 +63,9 @@
       this.version = 0;
       this.stampSeq = 0;
       this.deadline = null;        // časový limit rozhodnutí (nastavuje Autopilot)
+      this.paused = null;          // Akce: hra stojí, hráči kouzlí ({by, at, total})
+      this._pauseTimer = null;
+      this.stats = { arrived: { fly: 0, firefly: 0, dragonfly: 0 }, vodnik: 0 };
 
       this.players = opts.players.map((pl, i) => {
         const o = typeof pl === 'string' ? { name: pl } : pl;
@@ -77,6 +81,8 @@
           skipTurn: false,
           done: false,             // už doskočila na Kouzelný leknín
           place: null,             // konečné umístění
+          finalCredits: null,      // kredity těsně před veleskokem
+          stats: { cards: 0, got: { fly: 0, firefly: 0, dragonfly: 0 }, spells: 0, fireflies: 0, dist: 0 },
           scoreStamp: 0,           // kdy hráč naposledy změnil skóre (pro pořadí v tabulce)
           lastCredits: 0
         };
@@ -177,6 +183,17 @@
       next(0);
     }
 
+    /* Hráč získává hmyz (počítá se do statistik). */
+    gain(p, type, n) {
+      p.insects[type] += n;
+      p.stats.got[type] += n;
+    }
+
+    /* Uskákaná vzdálenost do statistik. */
+    travel(p, r, c) {
+      if (p.pos) p.stats.dist += FL.dist(p.pos, { r, c });
+    }
+
     addInsect(r, c, type, n) {
       const k = key(r, c);
       if (!this.insects[k]) this.insects[k] = { fly: 0, firefly: 0, dragonfly: 0 };
@@ -189,7 +206,7 @@
       if (!stack) return 0;
       let gained = 0;
       FL.INSECT_KEYS.forEach(t => {
-        if (stack[t]) { p.insects[t] += stack[t]; gained += stack[t] * FL.INSECTS[t].value; }
+        if (stack[t]) { this.gain(p, t, stack[t]); gained += stack[t] * FL.INSECTS[t].value; }
       });
       delete this.insects[k];
       if (this.lastEvent && this.lastEvent.r === r && this.lastEvent.c === c) this.lastEvent = null;
@@ -225,6 +242,7 @@
       }
       const card = this.deck.pop();
       p.hand.push(card);
+      p.stats.cards++;
       return card;
     }
 
@@ -234,6 +252,7 @@
       if (i < 0) return null;
       const card = p.hand.splice(i, 1)[0];
       this.discard.push(card);
+      p.stats.spells++;
       this.log(M.spell(p.name, FL.CARD_BY_ID[card.id].name), 'card', { sfx: 'spell', big: true });
       return card;
     }
@@ -361,7 +380,7 @@
       if (!this.settings.luck || this.active.length < 2) return;
       const best = Math.max(...this.active.map(o => this.credits(o)));
       if (best - this.credits(p) >= this.settings.luckGap) {
-        p.insects.fly++;
+        this.gain(p, 'fly', 1);
         this.log(M.luck(p.name), 'gain', { sfx: 'gain' });
       }
     }
@@ -384,7 +403,7 @@
         this._passTimer = null;
         if (this.halted || this.phase !== 'done') return;
         // někdo si mezitím sesílá kouzlo nebo mění hmyz – počká se, až dorozhodne
-        if (this.pending) return this.scheduleAutoPass(Math.max(200, this.settings.autoPassMs / 2));
+        if (this.pending || this.paused) return this.scheduleAutoPass(Math.max(200, this.settings.autoPassMs / 2));
         this.nextPlayer();
       }, delay == null ? this.settings.autoPassMs : delay);
     }
@@ -408,6 +427,7 @@
       this.log(M.rollLog(p.name, d10, black, white), 'roll', { sfx: 'dice' });
 
       if (d10 === 10) {
+        this.stats.vodnik++;
         this.phase = 'teleport';
         this.setEvent({ kind: 'vodnik', title: M.vodnikTitle(), sub: M.vodnikSub(p.name) });
         this.log(this.event.title, 'event', { big: true, sfx: 'vodnik' });
@@ -421,7 +441,7 @@
             this.event.sub = msg;
             this.event.r = r; this.event.c = c;
             this.log(msg, 'move', { sfx: 'whoosh' });
-            this.moveTo(p, r, c);
+            this.moveTo(p, r, c, null, true);
           }, { tag: 'teleport' });
         return;
       }
@@ -460,9 +480,10 @@
       const p = this.player;
       const pos = this.coord(r, c);
       const ev = { kind: type, r, c, chosen: !!chosen, title: M.arrive(type), gainedBy: null };
+      this.stats.arrived[type]++;
 
       if (FL.isMagic(r, c)) {
-        p.insects[type]++;
+        this.gain(p, type, 1);
         ev.gainedBy = p.id;
         ev.magic = true;
         ev.sub = M.landsOnMagic(p.name, type);
@@ -536,7 +557,9 @@
     doLeap() {
       if (!this.canLeap()) return;
       const p = this.player;
+      p.finalCredits = this.credits(p);           // do výsledků se počítá stav před zaplacením veleskoku
       this.spend(p, this.settings.leapPrice);
+      this.travel(p, FL.MAGIC_POS.r, FL.MAGIC_POS.c);
       this.pending = null;
       this._resumeMove = false;
       this.moveDue = false;
@@ -574,28 +597,34 @@
     }
 
     // ================= vyhodnocení dopadu =================
-    moveTo(p, r, c) {
+    /* Každý krok dopadu má pokračování `done`: u žáby na tahu je to konec tahu,
+     * u žáby, která uskočila Kvákrobatikou, návrat do skoku útočníka.
+     * carried = žábu přenesl Vodník (nepočítá se do uskákané vzdálenosti). */
+    moveTo(p, r, c, done, carried) {
       this._resumeMove = false;
+      if (!carried) this.travel(p, r, c);
       p.pos = { r, c };
       this.takeInsectsAt(p, r, c);
-      this.resolveLanding(p);
+      this.resolveLanding(p, done);
     }
 
-    resolveLanding(p) {
+    resolveLanding(p, done) {
+      const fin = done || (() => this.endTurn());
       const { r, c } = p.pos;
       const others = this.at(r, c).filter(o => o !== p);
-      if (!others.length) return this.applyTile(p);
+      if (!others.length) return this.applyTile(p, fin);
       const victims = others.filter(o => !this.jumped.has(o.id));
 
       this.phase = 'jump';
       this.seq(victims,
         (v, next) => this.headJump(p, v, next),
         () => {
+          if (this.halted) return;
           // Uskočil-li napadený Kvákrobatikou (nebo ho Žabiják poslal na START),
           // pole je volné a útočník na něm prostě zůstane. Jinak sklouzne.
-          if (this.at(r, c).some(o => o !== p)) return this.askSlide(p);
+          if (this.at(r, c).some(o => o !== p)) return this.askSlide(p, fin);
           this.log(M.landStays(p.name, this.coord(r, c)), 'move');
-          this.applyTile(p);
+          this.applyTile(p, fin);
         });
     }
 
@@ -609,17 +638,18 @@
         () => this.doSteal(att, vic, done));
     }
 
+    /* Kvákrobatika: úskok na sousední volné pole – i do vody. Pole se pak
+     * vyhodnotí jako po každém skoku (hmyz, voda, vír, trampolína, houba, bažina). */
     askDodge(vic, done) {
       const cells = this.neighbourKeys(vic.pos.r, vic.pos.c).filter(k => {
         const { r, c } = FL.parseKey(k);
-        return this.tile(r, c).type !== T.WATER && this.at(r, c).length === 0;
+        return this.at(r, c).length === 0;
       });
       if (!cells.length) { this.log(`${vic.name} nemá kam uskočit.`, 'sys'); return this.doSteal(null, vic, done); }
       this.askCell(vic.id, M.hint.dodge(vic.name), cells, (r, c) => {
         this.pending = null;
-        vic.pos = { r, c };
         this.log(M.dodge(vic.name, this.coord(r, c)), 'card', { sfx: 'hop' });
-        done();
+        this.moveTo(vic, r, c, done);
       }, { tag: 'dodge' });
     }
 
@@ -634,115 +664,118 @@
         () => { this.log(M.helmet(vic.name), 'card'); this.afterJump(att, vic, done); },
         () => {
           this.spend(vic, 1);
-          att.insects.fly += 1;
+          this.gain(att, 'fly', 1);
           this.log(M.headSteal(att.name, vic.name), 'gain', { sfx: 'gain' });
           this.afterJump(att, vic, done);
         });
     }
 
-    /* Žabiják platí jen skokům toho, kdo kartu aktivoval. */
+    /* Žabiják platí jen skokům toho, kdo kartu aktivoval: napadený nejdřív
+     * odevzdá 1 kredit (jako při každém skoku na hlavu) a pak jde na START. */
     afterJump(att, vic, done) {
       if (this.zabijak != null && att && this.zabijak === att.id) this.askStart(vic, 'Žabiják', done);
       else done();
     }
 
-    askSlide(p) {
+    askSlide(p, done) {
+      const fin = done || (() => this.endTurn());
       this.phase = 'slide';
       let cells = this.openCells(p, this.neighbourKeys(p.pos.r, p.pos.c));
       if (!cells.length) {
         cells = this.neighbourKeys(p.pos.r, p.pos.c).filter(k => { const { r, c } = FL.parseKey(k); return !this.at(r, c).length; });
       }
-      if (!cells.length) { this.log(`${p.name} nemá kam sklouznout.`, 'sys'); return this.endTurn(); }
+      if (!cells.length) { this.log(`${p.name} nemá kam sklouznout.`, 'sys'); return fin(); }
       this.askCell(p.id, M.hint.slide(p.name),
         cells,
         (r, c) => {
           this.pending = null;
           this.log(M.slide(p.name, this.coord(r, c)), 'move');
-          this.moveTo(p, r, c);
+          this.moveTo(p, r, c, fin);
         }, { tag: 'slide' });
     }
 
-    applyTile(p) {
+    applyTile(p, done) {
+      const fin = done || (() => this.endTurn());
       const t = this.tile(p.pos.r, p.pos.c);
 
       switch (t.type) {
         case T.WATER:
           this.phase = 'start';
           this.log(M.water(p.name), 'bad', { big: true, sfx: 'splash' });
-          this.askStart(p, M.reasonWater, () => this.endTurn());
+          this.askStart(p, M.reasonWater, fin);
           return;
 
         case T.WHIRL:
           this.log(M.whirl(p.name), 'event', { sfx: 'whirl' });
           this.offerPassive(p, 'plovaky',
             `${p.name}, nasadíš Plováky a zůstaneš nad vírem?`,
-            () => { this.log(M.floats(p.name), 'card'); this.endTurn(); },
-            () => this.askWhirlDir(p, t));
+            () => { this.log(M.floats(p.name), 'card'); fin(); },
+            () => this.askWhirlDir(p, t, fin));
           return;
 
         case T.TRAMPOLINE:
           this.log(M.tramp(p.name), 'event', { sfx: 'boing' });
-          this.askTrampolineDir(p, t);
+          this.askTrampolineDir(p, t, fin);
           return;
 
         case T.MUSHROOM: {
           const card = this.drawCard(p);
           if (card) this.log(M.mushroomCard(p.name, FL.CARD_BY_ID[card.id].name), 'card', { sfx: 'card', big: true });
-          this.endTurn();
+          fin();
           return;
         }
 
         case T.MAGIC:
           this.log(M.magicNoWin(), 'sys');
-          this.endTurn();
+          fin();
           return;
 
-        /* Bahno: hráč vynechá svůj následující tah – nehází kostkami ani neskáče.
-         * Kdo do bahna zapadne ještě před svým skokem (např. po Vodníkovi),
+        /* Bažina: hráč vynechá svůj následující tah – nehází kostkami ani neskáče.
+         * Kdo do bažiny zapadne ještě před svým skokem (např. po Vodníkovi),
          * přichází i o zbytek tohoto tahu. */
         case T.MUD:
           p.skipTurn = true;
           if (p === this.player) this.moveDue = false;
           this.log(M.mud(p.name), 'bad', { big: true, sfx: 'mud' });
-          this.endTurn();
+          fin();
           return;
 
         default:
-          this.endTurn();
+          fin();
       }
     }
 
     /* Vodní vír: cíl se vybírá kliknutím na zvýrazněné pole (konec šipky). */
-    askWhirlDir(p, t) {
+    askWhirlDir(p, t, done) {
       const step = FL.WHIRL_STEP;
       const cells = t.dirs
         .map(([dr, dc]) => [p.pos.r + dr * step, p.pos.c + dc * step])
         .filter(([r, c]) => FL.inBoard(r, c))
         .map(([r, c]) => key(r, c))
         .filter(k => !this.blockedFor(p, k));
-      if (!cells.length) { this.log('Vír tě nemá kam odnést – zůstáváš na místě.', 'sys'); return this.endTurn(); }
+      if (!cells.length) { this.log('Vír tě nemá kam odnést – zůstáváš na místě.', 'sys'); return done(); }
       this.phase = 'whirl';
       this.askCell(p.id, M.hint.whirl(p.name), cells, (r, c) => {
         this.pending = null;
         this.log(M.whirlMove(p.name, this.coord(r, c)), 'move', { sfx: 'whoosh' });
-        this.moveTo(p, r, c);
+        this.moveTo(p, r, c, done);
       }, { tag: 'whirl', from: key(p.pos.r, p.pos.c) });
     }
 
     /* 5) Trampolína: o 3 pole ve směru šipky – cíl se vybírá kliknutím. */
-    askTrampolineDir(p, t) {
+    askTrampolineDir(p, t, done) {
       const step = FL.TRAMPOLINE_STEP;
       const cells = t.dirs
         .map(([dr, dc]) => [p.pos.r + dr * step, p.pos.c + dc * step])
         .filter(([r, c]) => FL.inBoard(r, c))
         .map(([r, c]) => key(r, c))
         .filter(k => !this.blockedFor(p, k));
-      if (!cells.length) { this.log('Trampolína nemá kam odpálit.', 'sys'); return this.endTurn(); }
+      if (!cells.length) { this.log('Trampolína nemá kam odpálit.', 'sys'); return done(); }
       this.phase = 'trampoline';
       this.askCell(p.id, M.hint.tramp(p.name), cells, (r, c) => {
         this.pending = null;
         this.log(M.trampMove(p.name, this.coord(r, c)), 'move', { sfx: 'whoosh' });
-        this.moveTo(p, r, c);
+        this.moveTo(p, r, c, done);
       }, { tag: 'tramp', from: key(p.pos.r, p.pos.c) });
     }
 
@@ -836,6 +869,30 @@
       return typeof p === 'number' ? this.players[p] : p;
     }
 
+    /* Akce (mezerník): hra se zastaví až na 10 s, aby mohli hráči v klidu
+     * použít světlušku nebo kouzlo. Pauza skončí provedením akce, zavřením
+     * nabídky nebo vypršením času. who = kdo Akci vyvolal (nebo null). */
+    pauseForAction(who) {
+      if (this.paused || !this.canAct()) return;
+      const p = who == null ? null : this.owner(who);
+      if (p && p.done) return;
+      const ms = this.settings.pauseMs;
+      this.paused = { by: p ? p.id : null, at: Date.now() + ms, total: ms };
+      clearTimeout(this._pauseTimer);
+      this._pauseTimer = setTimeout(() => this.resume(true), ms);
+      this.log(M.pause(p ? p.name : null, Math.round(ms / 1000)), 'turn', { big: true, sfx: 'spell' });
+      this.emit();
+    }
+
+    resume(timeout) {
+      if (!this.paused) return;
+      clearTimeout(this._pauseTimer);
+      this._pauseTimer = null;
+      this.paused = null;
+      if (timeout) this.log(M.pauseEnd(), 'sys', { big: true });
+      this.emit();
+    }
+
     /* Jediný vstup do enginu. `seat` = kdo akci posílá (online);
      * null = hra na jednom zařízení, kde smí kdokoli cokoli. */
     apply(a, seat) {
@@ -845,8 +902,12 @@
       const isActor = free || (pend && pend.actorId === seat);
       const onTurn = free || seat === this.cur;
       const self = free || a.who === seat;
+      // během pauzy pro Akci se nehraje – jde jen kouzlit, použít světlušku a měnit v bance
+      if (this.paused && /^(cell|option|player|roll|leap|next|randomStarts|continue)$/.test(a.type)) return;
       try {
         switch (a.type) {
+          case 'pause': if (self || a.who == null) this.pauseForAction(a.who == null ? null : +a.who); break;
+          case 'resume': this.resume(); break;
           case 'cell': if (isActor) this.pickCell(+a.r, +a.c); break;
           case 'option': if (isActor) this.pickOption(+a.i); break;
           case 'player': if (isActor) this.pickPlayer(+a.id); break;
@@ -879,14 +940,16 @@
     fireflyAttack(who) {
       if (!this.canFirefly(who)) return;
       const p = this.owner(who);
+      this.resume();
       this.beginInterrupt();
       const ok = this.askPlayer(M.hint.firefly(p.name),
         o => o !== p && !o.done && this.credits(o) > 0,
         target => {
           this.pending = null;
           p.insects.firefly--;
+          p.stats.fireflies++;
           this.spend(target, 1);
-          p.insects.fly++;
+          this.gain(p, 'fly', 1);
           this.log(M.fireflyHit(p.name, target.name), 'gain', { sfx: 'zap', big: true });
         }, p.id, 'firefly');
       if (!ok) this.maybeResumeMove();
@@ -935,6 +998,7 @@
       }
       const fn = this.spells[card.id];
       if (!fn) return;
+      this.resume();
       this.beginInterrupt();
       fn.call(this, p, uid, def);
       this.maybeResumeMove();
@@ -965,7 +1029,7 @@
           const hit = [];
           area.forEach(cell => {
             if (this.insectsAt(cell.r, cell.c)) loot += this.takeInsectsAt(caster, cell.r, cell.c);
-            this.at(cell.r, cell.c).forEach(pl => { if (pl !== caster) hit.push(pl); });
+            this.at(cell.r, cell.c).forEach(pl => hit.push(pl));   // zasáhne i sesílajícího
           });
           this.log(loot ? `${caster.name} získává z oblasti hmyz za ${loot} kr.`
                         : 'V zasažené oblasti nebyl žádný hmyz.', loot ? 'gain' : 'sys');
@@ -994,6 +1058,10 @@
         first: this.first,
         winnerId: this.winner ? this.winner.id : null,
         finishOrder: this.finishOrder.slice(),
+        stats: JSON.parse(JSON.stringify(this.stats)),
+        paused: this.paused ? {
+          by: this.paused.by, left: Math.max(0, this.paused.at - now), total: this.paused.total
+        } : null,
         over: this.over,
         settings: Object.assign({}, this.settings),
         players: this.players.map(p => ({
@@ -1006,6 +1074,8 @@
           skipTurn: p.skipTurn,
           done: p.done,
           place: p.place,
+          finalCredits: p.finalCredits,
+          stats: JSON.parse(JSON.stringify(p.stats)),
           scoreStamp: p.scoreStamp,
           jumped: this.jumped.has(p.id)
         })),
@@ -1042,6 +1112,7 @@
     /* Ukončení hry – zastaví časovače (při odchodu z místnosti / nové hře). */
     destroy() {
       this.clearAutoPass();
+      clearTimeout(this._pauseTimer);
       this.listeners = [];
       this.over = true;
     }
@@ -1078,7 +1149,7 @@
             this.pending = null;
             this.cast(p, uid);
             target.insects[t]--;
-            p.insects[t]++;
+            this.gain(p, t, 1);
             this.log(`Černá ruka bere hráči ${target.name} ${FL.INSECT_FORMS[t].acc} pro hráče ${p.name}.`, 'card');
           }, { tag: 'cerna_ruka_type' });
         }, p.id, 'cerna_ruka');
@@ -1093,6 +1164,7 @@
           this.cast(p, uid);
           const stolen = target.hand.splice(rnd(target.hand.length), 1)[0];
           p.hand.push(stolen);
+          p.stats.cards++;
           this.log(`Černá magie: ${p.name} bere hráči ${target.name} jednu kartu kouzla.`, 'card');
         }, p.id, 'cerna_magie');
       if (!ok) this.maybeResumeMove();
@@ -1112,9 +1184,9 @@
         { cancel: () => {}, tag: 'jazyk' });
     },
 
-    zlata_muska(p, uid) { this.cast(p, uid); p.insects.fly++; this.log(`${p.name} bere z banku mouchu.`, 'gain'); },
-    svetluska(p, uid) { this.cast(p, uid); p.insects.firefly++; this.log(`${p.name} bere z banku světlušku.`, 'gain'); },
-    duhova_vazka(p, uid) { this.cast(p, uid); p.insects.dragonfly++; this.log(`${p.name} bere z banku vážku.`, 'gain'); },
+    zlata_muska(p, uid) { this.cast(p, uid); this.gain(p, 'fly', 1); this.log(`${p.name} bere z banku mouchu.`, 'gain'); },
+    svetluska(p, uid) { this.cast(p, uid); this.gain(p, 'firefly', 1); this.log(`${p.name} bere z banku světlušku.`, 'gain'); },
+    duhova_vazka(p, uid) { this.cast(p, uid); this.gain(p, 'dragonfly', 1); this.log(`${p.name} bere z banku vážku.`, 'gain'); },
 
     zamena(p, uid) {
       const ok = this.askPlayer(`${p.name}, Záměna: vyber hráče, se kterým si prohodíš místo.`,
@@ -1148,7 +1220,7 @@
     zabijak(p, uid) {
       this.cast(p, uid);
       this.zabijak = p.id;
-      this.log('Žabiják: žáby, na které teď hráč skočí, se vrátí na START.', 'card');
+      this.log('Žabiják: každá žába, na kterou teď hráč skočí, odevzdá 1 kredit a vrátí se na START.', 'card');
       if (p !== this.player)
         this.log(`${p.name} ale není na tahu – Žabiják platí jen do konce tohoto tahu.`, 'sys');
     }

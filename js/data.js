@@ -2,7 +2,7 @@
  *
  * Herní plán je mřížka 13x13. Vnitřní jezero má souřadnice 1..11
  * (přesně tak, jak je očíslované na plánu a jak ho adresují kostky D12).
- * Vnější prstenec (index 0 a 12) je BŘEH se STARTy, TRAMPOLÍNAMI, HOUBAMI a BAHNEM.
+ * Vnější prstenec (index 0 a 12) je BŘEH se STARTy, TRAMPOLÍNAMI, HOUBAMI a BAŽINAMI.
  * Soubor běží v prohlížeči i v Node.js (online server), proto globalThis.
  */
 (function () {
@@ -35,7 +35,7 @@
     whirl: 'Vodní vír',
     magic: 'Kouzelný leknín',
     trampoline: 'Trampolína',
-    mud: 'Bahno'
+    mud: 'Bažina'
   };
 
   // Geometrie podkladového obrázku images/board.jpeg (1080 x 1080 px).
@@ -50,10 +50,10 @@
 
   // --- pevné pozice odečtené z obrázku plánu -------------------------------
   /* Na každé hraně břehu je pořadí polí:
-   * houba(0) – BAHNO(1) – břeh(2) – TRAMPOLÍNA(3) – START(4) – BAHNO(5) –
-   * houba(6) – BAHNO(7) – START(8) – TRAMPOLÍNA(9) – břeh(10) – BAHNO(11) – houba(12)
+   * houba(0) – BAŽINA(1) – břeh(2) – TRAMPOLÍNA(3) – START(4) – BAŽINA(5) –
+   * houba(6) – BAŽINA(7) – START(8) – TRAMPOLÍNA(9) – břeh(10) – BAŽINA(11) – houba(12)
    * Startovní pole je to s nápisem START, ne černý kruh trampolíny vedle něj.
-   * Bahno jsou tmavé bažinaté plochy na břehu vedle hub (polí kouzel).
+   * Bažiny jsou tmavé plochy na břehu vedle hub (polí kouzel).
    */
   FL.STARTS = [
     { r: 0, c: 4 }, { r: 0, c: 8 },
@@ -82,7 +82,7 @@
     [8, 4], [8, 6], [8, 8]
   ];
 
-  // Bahno – na každé hraně břehu pozice 1, 5, 7 a 11.
+  // Bažina – na každé hraně břehu pozice 1, 5, 7 a 11.
   const MUD = [];
   [1, 5, 7, 11].forEach(i => MUD.push([0, i], [12, i], [i, 0], [i, 12]));
 
