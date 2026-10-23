@@ -552,3 +552,10 @@ textarea { width: 100%; resize: vertical; font-size: .8rem; font-family: ui-mono
   .st-table .st-nm span { max-width: 4.5rem; overflow: hidden; text-overflow: ellipsis; }
   .st-ico { width: 15px; height: 15px; }
 }
+
+/* přepínač jazyka v menu */
+.lang-link {
+  display: block; text-align: center; margin-top: .8rem; padding: .45rem .8rem;
+  color: var(--muted); text-decoration: none; border: 1px solid var(--line); border-radius: 9px; font-size: .88rem;
+}
+.lang-link:hover { color: var(--text); border-color: var(--accent); }

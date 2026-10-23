@@ -96,7 +96,7 @@
       this.setupOrder = [];
       for (let k = 1; k <= n; k++) this.setupOrder.push(this.players[(this.first - k + n * 2) % n].id);
 
-      this.log('Vítejte u Žabího jezera! Cena veleskoku: ' + this.settings.leapPrice + ' kreditů.', 'sys');
+      this.log(M.welcome(this.settings.leapPrice), 'sys');
       if (n > 1) this.log(M.firstPlayer(this.player.name), 'turn', { big: true, sfx: 'dice' });
       this.beginSetup();
     }
@@ -166,7 +166,7 @@
 
     insectsAt(r, c) { return this.insects[key(r, c)] || null; }
 
-    coord(r, c) { return FL.inLake(r, c) ? `${r}-${c}` : `břeh (${r},${c})`; }
+    coord(r, c) { return FL.inLake(r, c) ? `${r}-${c}` : M.shore(r, c); }
 
     neighbourKeys(r, c, skipMagic) {
       return FL.neighbours(r, c)
@@ -235,10 +235,10 @@
 
     drawCard(p) {
       if (!this.deck.length) {
-        if (!this.discard.length) { this.log('Balíček kouzel je prázdný.', 'sys'); return null; }
+        if (!this.discard.length) { this.log(M.deckEmpty(), 'sys'); return null; }
         this.deck = shuffle(this.discard);
         this.discard = [];
-        this.log('Odhazovací balíček byl zamíchán a vrácen do hry.', 'sys');
+        this.log(M.deckShuffled(), 'sys');
       }
       const card = this.deck.pop();
       p.hand.push(card);
@@ -279,7 +279,7 @@
 
     askPlayer(hint, filter, handler, actorId, tag) {
       const ids = this.players.filter(filter).map(p => p.id);
-      if (!ids.length) { this.log('Není koho zvolit.', 'sys'); return false; }
+      if (!ids.length) { this.log(M.noTarget(), 'sys'); return false; }
       this.ask({
         kind: 'player', tag,
         actorId: actorId == null ? this.player.id : actorId,
@@ -292,8 +292,8 @@
     offerPassive(p, cardId, hint, onYes, onNo) {
       if (!p.hand.some(c => c.id === cardId)) return onNo();
       this.askChoice(p.id, hint, [
-        { label: 'Použít ' + FL.CARD_BY_ID[cardId].name, value: true },
-        { label: 'Nepoužít', value: false }
+        { label: M.use(FL.CARD_BY_ID[cardId].name), value: true },
+        { label: M.dontUse(), value: false }
       ], v => {
         this.pending = null;
         if (v) {
@@ -329,7 +329,7 @@
         (r, c) => {
           this.pending = null;
           p.pos = { r, c };
-          this.log(`${p.name} obsazuje startovní pole.`, 'move');
+          this.log(M.setupTaken(p.name), 'move');
           this.beginSetup();
         }, { tag: 'setup' });
     }
@@ -342,7 +342,7 @@
         const s = free[rnd(free.length)];
         p.pos = { r: s.r, c: s.c };
       });
-      this.log('Žáby byly rozmístěny náhodně.', 'sys');
+      this.log(M.randomStarts(), 'sys');
       this.pending = null;
       this.beginSetup();
     }
@@ -459,7 +459,7 @@
             cells.push(key(r, c));
           }
         }
-        const what = rowFree && colFree ? 'pole' : rowFree ? 'řádek' : 'sloupec';
+        const what = M.twelveWhat[rowFree && colFree ? 'any' : rowFree ? 'row' : 'col'];
         this.phase = 'event';
         this.setEvent({ kind: type, title: M.twelveTitle(rowFree && colFree ? 2 : 1), sub: M.twelve(p.name, what, type), choosing: true });
         const hint = rowFree && colFree ? M.hint.twelveAny(p.name, type)
@@ -497,7 +497,7 @@
         if (frogs.length) {
           const lucky = frogs.indexOf(p) >= 0 ? p : frogs[0];
           ev.gainedBy = lucky.id;
-          ev.sub = `Pole ${pos}: ` + M.landsOnFrog(lucky.name, type);
+          ev.sub = M.fieldLabel(pos) + M.landsOnFrog(lucky.name, type);
           this.setEvent(ev);
           this.log(`${ev.title} ${ev.sub}`, 'event', { sfx: 'bug', big: true });
           this.takeInsectsAt(lucky, r, c);
@@ -532,7 +532,7 @@
       const leap = this.canLeap();
       if (leap) cells.push(key(FL.MAGIC_POS.r, FL.MAGIC_POS.c));
       if (!cells.length) {                       // všude kolem žáby, na které už se skákalo
-        this.log(`${p.name} nemá kam skočit a zůstává na místě.`, 'sys');
+        this.log(M.noJump(p.name), 'sys');
         return this.endTurn();
       }
       const hint = leap ? M.hint.leapReady(p.name)
@@ -633,7 +633,7 @@
       this.jumped.add(vic.id);
       this.log(M.headJump(att.name, vic.name), 'bad', { big: true, sfx: 'bonk' });
       this.offerPassive(vic, 'kvakrobatika',
-        `${vic.name}, ${att.name} Ti skáče na hlavu! Použiješ Kvákrobatiku a uskočíš?`,
+        M.dodgeQ(vic.name, att.name),
         () => this.askDodge(vic, done),
         () => this.doSteal(att, vic, done));
     }
@@ -645,7 +645,7 @@
         const { r, c } = FL.parseKey(k);
         return this.at(r, c).length === 0;
       });
-      if (!cells.length) { this.log(`${vic.name} nemá kam uskočit.`, 'sys'); return this.doSteal(null, vic, done); }
+      if (!cells.length) { this.log(M.noDodge(vic.name), 'sys'); return this.doSteal(null, vic, done); }
       this.askCell(vic.id, M.hint.dodge(vic.name), cells, (r, c) => {
         this.pending = null;
         this.log(M.dodge(vic.name, this.coord(r, c)), 'card', { sfx: 'hop' });
@@ -660,7 +660,7 @@
         return this.afterJump(att, vic, done);
       }
       this.offerPassive(vic, 'helma',
-        `${vic.name}, použiješ Helmu a neztratíš kredit?`,
+        M.helmetQ(vic.name),
         () => { this.log(M.helmet(vic.name), 'card'); this.afterJump(att, vic, done); },
         () => {
           this.spend(vic, 1);
@@ -673,7 +673,7 @@
     /* Žabiják platí jen skokům toho, kdo kartu aktivoval: napadený nejdřív
      * odevzdá 1 kredit (jako při každém skoku na hlavu) a pak jde na START. */
     afterJump(att, vic, done) {
-      if (this.zabijak != null && att && this.zabijak === att.id) this.askStart(vic, 'Žabiják', done);
+      if (this.zabijak != null && att && this.zabijak === att.id) this.askStart(vic, M.card('zabijak'), done);
       else done();
     }
 
@@ -684,7 +684,7 @@
       if (!cells.length) {
         cells = this.neighbourKeys(p.pos.r, p.pos.c).filter(k => { const { r, c } = FL.parseKey(k); return !this.at(r, c).length; });
       }
-      if (!cells.length) { this.log(`${p.name} nemá kam sklouznout.`, 'sys'); return fin(); }
+      if (!cells.length) { this.log(M.noSlide(p.name), 'sys'); return fin(); }
       this.askCell(p.id, M.hint.slide(p.name),
         cells,
         (r, c) => {
@@ -708,7 +708,7 @@
         case T.WHIRL:
           this.log(M.whirl(p.name), 'event', { sfx: 'whirl' });
           this.offerPassive(p, 'plovaky',
-            `${p.name}, nasadíš Plováky a zůstaneš nad vírem?`,
+            M.floatsQ(p.name),
             () => { this.log(M.floats(p.name), 'card'); fin(); },
             () => this.askWhirlDir(p, t, fin));
           return;
@@ -753,7 +753,7 @@
         .filter(([r, c]) => FL.inBoard(r, c))
         .map(([r, c]) => key(r, c))
         .filter(k => !this.blockedFor(p, k));
-      if (!cells.length) { this.log('Vír tě nemá kam odnést – zůstáváš na místě.', 'sys'); return done(); }
+      if (!cells.length) { this.log(M.whirlNoWay(), 'sys'); return done(); }
       this.phase = 'whirl';
       this.askCell(p.id, M.hint.whirl(p.name), cells, (r, c) => {
         this.pending = null;
@@ -770,7 +770,7 @@
         .filter(([r, c]) => FL.inBoard(r, c))
         .map(([r, c]) => key(r, c))
         .filter(k => !this.blockedFor(p, k));
-      if (!cells.length) { this.log('Trampolína nemá kam odpálit.', 'sys'); return done(); }
+      if (!cells.length) { this.log(M.trampNoWay(), 'sys'); return done(); }
       this.phase = 'trampoline';
       this.askCell(p.id, M.hint.tramp(p.name), cells, (r, c) => {
         this.pending = null;
@@ -923,7 +923,7 @@
           default: return;
         }
       } catch (e) {
-        console.error('Žabí jezero – chyba akce', a, e);
+        console.error('Frog Lake – action error', a, e);
       }
       this.emit();
     }
@@ -992,7 +992,7 @@
       if (!card) return;
       const def = FL.CARD_BY_ID[card.id];
       if (def.passive) {
-        this.log(`${def.name} je pasivní kouzlo – nabídne se samo, až nastane situace, na kterou reaguje.`, 'sys');
+        this.log(M.passiveCard(def.name), 'sys');
         this.emit();
         return;
       }
@@ -1017,12 +1017,12 @@
     }
 
     attackArea(caster, uid, def, size) {
-      this.askCell(caster.id, `${caster.name}, ${def.name}: vyber střed zasažené oblasti ${size} × ${size}.`,
+      this.askCell(caster.id, M.areaHint(caster.name, def.name, size),
         this.allCellsExceptMagic().concat([key(FL.MAGIC_POS.r, FL.MAGIC_POS.c)]),
         (r, c) => {
           this.pending = null;
           this.cast(caster, uid);
-          this.log(`${def.name} útočí na oblast ${size}×${size} se středem ${this.coord(r, c)}.`, 'card', { sfx: 'attack' });
+          this.log(M.areaLog(def.name, size, this.coord(r, c)), 'card', { sfx: 'attack' });
 
           const area = this.areaCells(r, c, size);
           let loot = 0;
@@ -1031,12 +1031,11 @@
             if (this.insectsAt(cell.r, cell.c)) loot += this.takeInsectsAt(caster, cell.r, cell.c);
             this.at(cell.r, cell.c).forEach(pl => hit.push(pl));   // zasáhne i sesílajícího
           });
-          this.log(loot ? `${caster.name} získává z oblasti hmyz za ${loot} kr.`
-                        : 'V zasažené oblasti nebyl žádný hmyz.', loot ? 'gain' : 'sys');
+          this.log(loot ? M.areaLoot(caster.name, loot) : M.areaEmpty(), loot ? 'gain' : 'sys');
 
           this.seq(hit, (v, next) => {
             this.offerPassive(v, 'bublina',
-              `${v.name}, schováš se do Bubliny před kouzlem ${def.name}?`,
+              M.bubbleQ(v.name, def.name),
               () => { this.log(M.bubble(v.name), 'card'); next(); },
               () => this.askStart(v, def.name, next));
           });
@@ -1127,7 +1126,7 @@
       const act = this.active;
       const hands = act.map(pl => pl.hand);
       act.forEach((pl, i) => (pl.hand = hands[(i - 1 + hands.length) % hands.length]));
-      this.log('Hurikán! Karty putují po směru hodinových ručiček.', 'card', { sfx: 'whoosh' });
+      this.log(M.hurricane(), 'card', { sfx: 'whoosh' });
     },
 
     tajfun(p, uid) {
@@ -1135,29 +1134,29 @@
       const act = this.active;
       const hands = act.map(pl => pl.hand);
       act.forEach((pl, i) => (pl.hand = hands[(i + 1) % hands.length]));
-      this.log('Tajfun! Karty putují proti směru hodinových ručiček.', 'card', { sfx: 'whoosh' });
+      this.log(M.typhoon(), 'card', { sfx: 'whoosh' });
     },
 
     cerna_ruka(p, uid) {
-      const ok = this.askPlayer(`${p.name}, Černá ruka: vyber hráče, kterému sebereš 1 kus hmyzu.`,
+      const ok = this.askPlayer(M.blackHandHint(p.name),
         pl => pl !== p && !pl.done && this.bugCount(pl) > 0,
         target => {
           this.pending = null;
           const opts = FL.INSECT_KEYS.filter(t => target.insects[t] > 0)
             .map(t => ({ label: FL.INSECTS[t].name, value: t }));
-          this.askChoice(p.id, `${p.name}, který hmyz sebereš hráči ${target.name}?`, opts, t => {
+          this.askChoice(p.id, M.blackHandWhich(p.name, target.name), opts, t => {
             this.pending = null;
             this.cast(p, uid);
             target.insects[t]--;
             this.gain(p, t, 1);
-            this.log(`Černá ruka bere hráči ${target.name} ${FL.INSECT_FORMS[t].acc} pro hráče ${p.name}.`, 'card');
+            this.log(M.blackHandLog(p.name, target.name, t), 'card');
           }, { tag: 'cerna_ruka_type' });
         }, p.id, 'cerna_ruka');
       if (!ok) this.maybeResumeMove();
     },
 
     cerna_magie(p, uid) {
-      const ok = this.askPlayer(`${p.name}, Černá magie: vyber hráče, kterému sebereš 1 kartu kouzla.`,
+      const ok = this.askPlayer(M.blackMagicHint(p.name),
         pl => pl !== p && !pl.done && pl.hand.length > 0,
         target => {
           this.pending = null;
@@ -1165,7 +1164,7 @@
           const stolen = target.hand.splice(rnd(target.hand.length), 1)[0];
           p.hand.push(stolen);
           p.stats.cards++;
-          this.log(`Černá magie: ${p.name} bere hráči ${target.name} jednu kartu kouzla.`, 'card');
+          this.log(M.blackMagicLog(p.name, target.name), 'card');
         }, p.id, 'cerna_magie');
       if (!ok) this.maybeResumeMove();
     },
@@ -1173,8 +1172,8 @@
     jazyk(p, uid) {
       const cells = this.neighbourKeys(p.pos.r, p.pos.c, false)
         .filter(k => { const { r, c } = FL.parseKey(k); return !!this.insectsAt(r, c); });
-      if (!cells.length) { this.log('Na sousedních polích není žádný hmyz.', 'sys'); return; }
-      this.askCell(p.id, `${p.name}, Vystřelovací jazyk: vyber sousední pole, ze kterého sebereš kredity.`,
+      if (!cells.length) { this.log(M.tongueNone(), 'sys'); return; }
+      this.askCell(p.id, M.tongueHint(p.name),
         cells,
         (r, c) => {
           this.pending = null;
@@ -1184,28 +1183,28 @@
         { cancel: () => {}, tag: 'jazyk' });
     },
 
-    zlata_muska(p, uid) { this.cast(p, uid); this.gain(p, 'fly', 1); this.log(`${p.name} bere z banku mouchu.`, 'gain'); },
-    svetluska(p, uid) { this.cast(p, uid); this.gain(p, 'firefly', 1); this.log(`${p.name} bere z banku světlušku.`, 'gain'); },
-    duhova_vazka(p, uid) { this.cast(p, uid); this.gain(p, 'dragonfly', 1); this.log(`${p.name} bere z banku vážku.`, 'gain'); },
+    zlata_muska(p, uid) { this.cast(p, uid); this.gain(p, 'fly', 1); this.log(M.bankInsect(p.name, 'fly'), 'gain'); },
+    svetluska(p, uid) { this.cast(p, uid); this.gain(p, 'firefly', 1); this.log(M.bankInsect(p.name, 'firefly'), 'gain'); },
+    duhova_vazka(p, uid) { this.cast(p, uid); this.gain(p, 'dragonfly', 1); this.log(M.bankInsect(p.name, 'dragonfly'), 'gain'); },
 
     zamena(p, uid) {
-      const ok = this.askPlayer(`${p.name}, Záměna: vyber hráče, se kterým si prohodíš místo.`,
+      const ok = this.askPlayer(M.swapHint(p.name),
         pl => pl !== p && !pl.done && !!pl.pos,
         target => {
           this.pending = null;
           this.cast(p, uid);
           const tmp = p.pos; p.pos = target.pos; target.pos = tmp;
-          this.log(`${p.name} a ${target.name} si vyměňují místa.`, 'card', { sfx: 'whoosh' });
+          this.log(M.swapLog(p.name, target.name), 'card', { sfx: 'whoosh' });
         }, p.id, 'zamena');
       if (!ok) this.maybeResumeMove();
     },
 
     kraken(p, uid) {
       this.cast(p, uid);
-      this.log('Kraken se vynořil! Všichni ostatní odevzdávají 1 kredit.', 'card', { sfx: 'attack' });
+      this.log(M.kraken(), 'card', { sfx: 'attack' });
       this.active.forEach(pl => {
         if (pl === p) return;
-        if (this.credits(pl) > 0) { this.spend(pl, 1); this.log(`${pl.name} odevzdává 1 kredit do banku.`, 'bad'); }
+        if (this.credits(pl) > 0) { this.spend(pl, 1); this.log(M.krakenPay(pl.name), 'bad'); }
       });
     },
 
@@ -1214,15 +1213,15 @@
       const n = Object.keys(this.insects).length;
       this.insects = {};
       this.lastEvent = null;
-      this.log(`Eko katastrofa! Z plánu mizí hmyz z ${n} polí.`, 'card');
+      this.log(M.eco(n), 'card');
     },
 
     zabijak(p, uid) {
       this.cast(p, uid);
       this.zabijak = p.id;
-      this.log('Žabiják: každá žába, na kterou teď hráč skočí, odevzdá 1 kredit a vrátí se na START.', 'card');
+      this.log(M.zabijak(), 'card');
       if (p !== this.player)
-        this.log(`${p.name} ale není na tahu – Žabiják platí jen do konce tohoto tahu.`, 'sys');
+        this.log(M.zabijakNotTurn(p.name), 'sys');
     }
   };
 

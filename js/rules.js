@@ -1,15 +1,16 @@
-/* Žabí jezero – kompletní pravidla (verze 2)
+/* Žabí jezero / Frog Lake – kompletní pravidla (verze 2), česky i anglicky
  *
  * Jediný zdroj textu pravidel: ve hře je ukáže klávesa R a skript
- * `node tools/export-rules.js` z něj vygeneruje soubor `game rules.txt`
- * pro deskovou verzi. Pravidla obou verzí jsou tedy vždy stejná.
+ * `node tools/export-rules.js` z něj vygeneruje soubory `game rules.txt`
+ * (česky) a `game rules EN.txt` (anglicky) pro deskovou verzi.
+ * Pravidla obou verzí jsou tedy vždy stejná.
  *
  * Blok je buď odstavec (řetězec), nebo { list: [...] }, nebo { table: [[...], ...] }.
  */
 (function () {
   const FL = (globalThis.FL = globalThis.FL || {});
 
-  FL.RULES = {
+  const RULES_CS = {
     title: 'ŽABÍ JEZERO® – PRAVIDLA HRY',
     version: 'verze 2',
     intro: [
@@ -208,11 +209,213 @@
     outro: ['Příjemnou žábavu!', 'Žabí jezero®']
   };
 
+  const RULES_EN = {
+    title: 'FROG LAKE® – GAME RULES',
+    version: 'version 2',
+    intro: [
+      'Welcome to Frog Lake!',
+      'At Frog Lake, up to eight brave frogs race to the Magic Lily. On the way they catch insects, cast spells, use the powers of the lake and now and then jump right on somebody’s head.',
+      'Every game is different. Strategy, tactics, luck and good timing decide the winner – and thanks to the Fair Play rules, everyone who joins in has a chance.',
+      'The first frog to land on the Magic Lily wins!'
+    ],
+    sections: [
+      {
+        title: '1. Setup',
+        blocks: [
+          '1–8 players. The board game is for 2–8 players; in the digital version empty seats can be filled with computer frogs, so you can even play alone.',
+          { list: [
+            'Unfold the game board.',
+            'Prepare the bank (the supply of insects) and the dice: a green D10, a black D12 and a white D12.',
+            'Shuffle the spell cards and get the frog figures ready.',
+            'Each player takes their frog and the matching credit tray.',
+            'A roll of the dice decides who starts.',
+            'Players choose their start fields in reverse turn order – so the starting player chooses last. Everyone takes any free START field.'
+          ] },
+          'Players may also act as bankers and manage the shared supply of credits and game pieces.'
+        ]
+      },
+      {
+        title: '2. Playing the game',
+        blocks: [
+          'Play goes clockwise. On their turn a player:',
+          { list: [
+            'rolls the dice,',
+            'resolves the event and places an insect on the board if needed,',
+            'makes their jump (or another available move) and collects the insects or the spell from the field they landed on,',
+            'then the next player continues.'
+          ] },
+          'Any player may use spells and fireflies at any time during the game – even outside their own turn (see Credits and insects and Spells).',
+          'A player stuck in the swamp skips their turn – they neither roll the dice nor jump.'
+        ]
+      },
+      {
+        title: '3. Dice and events',
+        blocks: [
+          'The player rolls the green D10 + the black D12 + the white D12. The green D10 decides the event:',
+          { table: [
+            ['D10 roll', 'Event'],
+            ['1–3', '1 fly arrives at the lake.'],
+            ['4–6', '1 firefly arrives at the lake.'],
+            ['7–9', '1 dragonfly arrives at the lake.'],
+            ['10 / 0', 'Lojzík the Water Goblin: the player moves their frog to any field except the Magic Lily.']
+          ] },
+          'The D12 dice decide where the event happens: the black D12 gives the row, the white D12 the column. Values 1–11 are used. If a 12 comes up, the player chooses any number for it. If two 12s come up, the player chooses any field of the lake.',
+          { list: [
+            'Insect on a frog: if an insect lands on a field where a frog is standing, its player gets it at once – as if they had jumped there.',
+            'Insect on the Magic Lily: if an insect lands on the Magic Lily (6-6), the player who rolled the dice gets it.',
+            'An insect may also land on water. It stays there until someone jumps for it (and then falls into the water) or collects it with a spell.',
+            'The Water Goblin is an event of the roll, not a jump: after the move the field where the frog landed takes effect, and the player still makes their jump.'
+          ] }
+        ]
+      },
+      {
+        title: '4. Moving the frogs',
+        blocks: [
+          'Every player must move on their turn – except the turn they skip because of the swamp.',
+          'Basic jump: the frog jumps to one neighboring field horizontally, vertically or diagonally.',
+          'Besides the basic jump, a frog can be moved by the board (whirlpool, trampoline), by a spell or by another player.'
+        ]
+      },
+      {
+        title: '5. Board fields',
+        blocks: [
+          { table: [
+            ['Field', 'Effect'],
+            ['START', 'Frogs start here. At the start of the game or when returning to start, the player chooses any free start field.'],
+            ['Shore, Lily pad', 'An ordinary field with no special effect.'],
+            ['Water', 'Open water without a lily pad. A frog that jumps in immediately returns to any free START.'],
+            ['Whirlpool', 'The frog is immediately carried 2 fields in the direction of one of the arrows, chosen by the player.'],
+            ['Trampoline', 'The black circle in an orange frame on the shore. The frog immediately moves 3 fields in the direction of the chosen arrow along the shore – onto the neighboring Mushroom.'],
+            ['Mushroom', 'The player takes the top spell card. When the deck runs out, the discarded cards are shuffled and returned to play.'],
+            ['Swamp', 'The dark swamps on the shore next to the Mushrooms and STARTs. The player loses their next turn: they neither roll the dice nor jump. If a frog falls into the swamp before its jump (e.g. after the Water Goblin), it also loses the rest of the turn.'],
+            ['Big lily pad', 'Fields 4-4, 4-6, 4-8, 6-4, 6-8, 8-4, 8-6, 8-8. A grand leap can only start from these.'],
+            ['Magic Lily', 'The winning field in the middle of the lake (6-6). It can only be reached by a grand leap.']
+          ] }
+        ]
+      },
+      {
+        title: '6. Credits and insects',
+        blocks: [
+          { table: [
+            ['Insect', 'Value'],
+            ['Fly', '1 credit'],
+            ['Firefly', '1 credit – or a firefly attack'],
+            ['Dragonfly', '2 credits']
+          ] },
+          'Credits can be gained, spent, stolen or lost according to the rules and the effects of spells. At the bank, a dragonfly can be exchanged for 2 flies and 2 flies for a dragonfly at any time.',
+          'Firefly attack: at any time, a player may return their firefly to the bank and take 1 credit from another player (receiving it as a fly from the bank). The attacked player hands in insects worth 1 credit – changing a dragonfly if necessary.'
+        ]
+      },
+      {
+        title: '7. The grand leap to the Magic Lily',
+        blocks: [
+          'You can only win on the Magic Lily with a grand leap, made from one of the eight big lily pads.',
+          'The price of the grand leap is set before the game. The recommended price is 10 credits; choose a lower price for a quick game, a higher one for a more challenging or team game.',
+          'The grand leap replaces the basic jump: a player standing on a big lily pad with enough credits pays the price to the bank and lands on the Magic Lily.',
+          'In the digital version the Magic Lily starts to glow at that moment – just click (tap) it.'
+        ]
+      },
+      {
+        title: '8. Head jump',
+        blocks: [
+          'If a player jumps onto a field occupied by another player:',
+          { list: [
+            'they take 1 credit from them,',
+            'then they slide to any neighboring field.'
+          ] },
+          'This slide may cause another interaction with another player.',
+          { list: [
+            'You may jump on the same player at most once per turn – you may neither jump nor slide onto a field with a frog that has already been jumped on this turn.',
+            'Two frogs may never stand on the same field at the end of a turn.',
+            'If the attacked frog leaps away with Croakrobatics (or Frogslayer sends it to START), the field becomes free: the attacker stays there, does not slide and the field takes effect.'
+          ] }
+        ]
+      },
+      {
+        title: '9. Spells',
+        blocks: [
+          'Spells can be used at any time during the game unless their effect says otherwise. Every spell can be used once; after use the card is discarded. A player gets a spell card on a Mushroom field and announces aloud which spell they got. Passive spells (Bubble, Helmet, Floaties, Croakrobatics) are used at the moment the situation they react to happens.',
+          { table: [
+            ['Spell', 'Effect'],
+            ['Heron ×1', 'Strikes a 5 × 5 area. Players hit return to START – including the caster, if standing in the area. The caster collects all insects in the area.'],
+            ['Pike ×2', 'Strikes a 3 × 3 area. Players hit return to START – including the caster, if standing in the area. The caster collects all insects in the area.'],
+            ['Hurricane ×1', 'Everyone passes their spell cards one player clockwise.'],
+            ['Typhoon ×1', 'Everyone passes their spell cards one player counter-clockwise.'],
+            ['Black Hand ×2', 'Take 1 insect from any player.'],
+            ['Black Magic ×2', 'Take 1 spell card from any player (blindly).'],
+            ['Shooting Tongue ×2', 'Collect the insects from one neighboring field.'],
+            ['Bubble ×2 (passive)', 'Protects you once from a Pike or Heron attack.'],
+            ['Helmet ×2 (passive)', 'Protects you once from losing a credit when another player jumps on your head.'],
+            ['Golden Fly ×2', 'Take 1 fly from the bank.'],
+            ['Glowing Firefly ×2', 'Take 1 firefly from the bank.'],
+            ['Rainbow Dragonfly ×1', 'Take 1 dragonfly from the bank.'],
+            ['Swap ×2', 'Swap places with the player you point at.'],
+            ['Floaties ×2 (passive)', 'When a Whirlpool is about to carry you away, you may stay on your field.'],
+            ['Croakrobatics ×2 (passive)', 'When another player jumps on your head, you may leap 1 field anywhere (not onto another frog, even into water) and avoid the consequences. The field you land on counts like after any jump: you collect its insects, water sends you to START, whirlpools and trampolines carry you, a mushroom gives you a spell, the swamp holds you. The attacker stays on the freed field and cannot jump on you again this turn.'],
+            ['Kraken ×1', 'All other players pay 1 credit to the bank.'],
+            ['Eco Disaster ×1', 'All insects on the board vanish. Insects already owned by players stay.'],
+            ['Frogslayer ×4', 'Every frog whose head you jump on until the end of this turn gives you 1 credit, as with any head jump, and then goes back to START.']
+          ] },
+          'Careful: the Heron and the Pike also hit the player who cast them, if that player stands in the area.'
+        ]
+      },
+      {
+        title: '10. Fair play',
+        blocks: [
+          'So that everyone has a chance, these recommended rules apply:',
+          { list: [
+            'A roll of the dice decides who starts, and players choose their start fields in reverse turn order.',
+            'Playing on for places: the game does not end with the first winner – the others may play on for the next places.',
+            'Action at any time: anyone can step into another player’s turn with a firefly or a spell – the leading frog is never safe. Whoever calls an Action pauses the game for up to 10 seconds (until the action is done) so that everyone can cast in peace.',
+            'Time limit (optional): whoever does not decide in time gets a decision from frog instinct.'
+          ] }
+        ]
+      },
+      {
+        title: '11. Winning',
+        blocks: [
+          'The winner is the first player who:',
+          { list: [
+            'collects enough credits,',
+            'makes a grand leap from a big lily pad,',
+            'lands on the Magic Lily.'
+          ] },
+          'Playing on for places: whenever someone lands on the Magic Lily, the players decide whether the others play on for the next places (C), start a new game (N) or quit (Q). A frog that has finished no longer takes part – it does not play, cannot be attacked and cannot cast spells. When only one frog is left in the lake, it takes the last place and the game ends.',
+          'The results show, for frogs that have finished, their credits just before paying for the grand leap. Below the standings are the game statistics: number of rounds, how many flies, fireflies and dragonflies arrived, how often the Water Goblin appeared, and for each player the spells and insects collected, the spells and fireflies used and the distance jumped in fields.'
+        ]
+      },
+      {
+        title: '12. Digital version – controls',
+        blocks: [
+          'Jumps and the targets of whirlpools, trampolines and spells are chosen by clicking (tapping) the highlighted fields. Grand leap = click the glowing Magic Lily. A player to attack can be chosen in the scoreboard or right on the board. At the start every player chooses their frog (avatar).',
+          { table: [
+            ['Key', 'Function'],
+            ['Space', 'Action – pauses the game for up to 10 s and opens the menu of fireflies and spells (again = close and continue)'],
+            ['Enter', 'Roll the dice / next player'],
+            ['C', 'After a landing on the Magic Lily: continue – play on for places'],
+            ['S', 'Sound effects on / off'],
+            ['M', 'Background music on / off'],
+            ['R', 'Complete rules'],
+            ['N', 'New game'],
+            ['Q', 'Quit the game (back to the menu)'],
+            ['Esc', 'Close a window / cancel the current action']
+          ] },
+          'The scoreboard puts frogs that have finished at the top (in order of arrival), the others by credits; on a tie the player who reached the score later is higher, and on a further tie the alphabet decides.',
+          'The game is played on one device: one player against computer frogs, or several players taking turns at the device.'
+        ]
+      }
+    ],
+    outro: ['Have a hoppy time!', 'Frog Lake®']
+  };
+
+  FL.RULES_ALL = { cs: RULES_CS, en: RULES_EN };
+  FL.RULES = FL.RULES_ALL[FL.LANG === 'en' ? 'en' : 'cs'];
+
   const esc = s => String(s).replace(/[&<>"']/g, ch =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
-  FL.rulesHtml = function () {
-    const R = FL.RULES;
+  FL.rulesHtml = function (lang) {
+    const R = lang ? FL.RULES_ALL[lang] : FL.RULES;
     const block = b => {
       if (typeof b === 'string') return `<p>${esc(b)}</p>`;
       if (b.list) return '<ul>' + b.list.map(i => `<li>${esc(i)}</li>`).join('') + '</ul>';
@@ -230,8 +433,8 @@
       R.outro.map(p => `<p class="outro">${esc(p)}</p>`).join('') + '</div>';
   };
 
-  FL.rulesText = function () {
-    const R = FL.RULES;
+  FL.rulesText = function (lang) {
+    const R = lang ? FL.RULES_ALL[lang] : FL.RULES;
     const out = [R.title + ' (' + R.version + ')', ''];
     R.intro.forEach(p => out.push(p));
     R.sections.forEach(s => {

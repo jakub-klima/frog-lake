@@ -7,6 +7,7 @@
  */
 (function () {
   const FL = (globalThis.FL = globalThis.FL || {});
+  const EN = FL.LANG === 'en';          // jazyk volí js/i18n.js (výchozí čeština)
 
   FL.SIZE = 13;
   FL.LAKE_MIN = 1;
@@ -25,7 +26,18 @@
     MUD: 'mud'
   };
 
-  FL.TILE_NAME = {
+  FL.TILE_NAME = EN ? {
+    shore: 'Shore',
+    start: 'Start',
+    mushroom: 'Mushroom',
+    lily: 'Lily pad',
+    big: 'Big lily pad',
+    water: 'Water',
+    whirl: 'Whirlpool',
+    magic: 'Magic Lily',
+    trampoline: 'Trampoline',
+    mud: 'Swamp'
+  } : {
     shore: 'Břeh',
     start: 'Start',
     mushroom: 'Houba',
@@ -202,12 +214,16 @@
 
   // --- hmyz ----------------------------------------------------------------
   FL.INSECTS = {
-    fly: { name: 'Moucha', value: 1, img: 'images/old/Fly.png' },
-    firefly: { name: 'Světluška', value: 1, img: 'images/old/Firefly.png' },
-    dragonfly: { name: 'Vážka', value: 2, img: 'images/old/Dragonfly.png' }
+    fly: { name: EN ? 'Fly' : 'Moucha', value: 1, img: 'images/old/Fly.png' },
+    firefly: { name: EN ? 'Firefly' : 'Světluška', value: 1, img: 'images/old/Firefly.png' },
+    dragonfly: { name: EN ? 'Dragonfly' : 'Vážka', value: 2, img: 'images/old/Dragonfly.png' }
   };
   // tvary pro hlášky: "přiletěla nová moucha", "sebral mouchu"
-  FL.INSECT_FORMS = {
+  FL.INSECT_FORMS = EN ? {
+    fly: { one: 'fly', acc: 'fly', gen: 'fly', plural: 'flies' },
+    firefly: { one: 'firefly', acc: 'firefly', gen: 'firefly', plural: 'fireflies' },
+    dragonfly: { one: 'dragonfly', acc: 'dragonfly', gen: 'dragonfly', plural: 'dragonflies' }
+  } : {
     fly: { one: 'moucha', acc: 'mouchu', gen: 'mouchy', plural: 'mouchy' },
     firefly: { one: 'světluška', acc: 'světlušku', gen: 'světlušky', plural: 'světlušky' },
     dragonfly: { one: 'vážka', acc: 'vážku', gen: 'vážky', plural: 'vážky' }
@@ -215,44 +231,67 @@
   FL.INSECT_KEYS = ['fly', 'firefly', 'dragonfly'];
 
   // --- balíček kouzel (32 karet, dle obrázků cards-1 / cards-2) -------------
-  FL.CARDS = [
-    { id: 'volavka', name: 'Volavka', count: 1, color: '#7d2b1f',
-      text: 'Útok volavky zasáhne oblast 5 × 5 polí. Zasažení hráči se vrátí na START. Hráč, který kouzlo aktivoval, získává veškerý hmyz nacházející se v zasažené oblasti.' },
-    { id: 'stika', name: 'Štika', count: 2, color: '#c2560f',
-      text: 'Útok štiky zasáhne oblast 3 × 3 polí. Zasažení hráči se vrátí na START. Hráč, který kouzlo aktivoval, získává veškerý hmyz nacházející se v zasažené oblasti.' },
-    { id: 'hurikan', name: 'Hurikán', count: 1, color: '#1b3a63',
-      text: 'Všichni hráči si předají své karty kouzel v ruce o jednoho hráče po směru hodinových ručiček.' },
-    { id: 'tajfun', name: 'Tajfun', count: 1, color: '#14161a',
-      text: 'Všichni hráči si předají své karty kouzel v ruce o jednoho hráče proti směru hodinových ručiček.' },
-    { id: 'cerna_ruka', name: 'Černá ruka', count: 2, color: '#101014',
-      text: 'Vezmi si 1 kus hmyzu od libovolného hráče.' },
-    { id: 'cerna_magie', name: 'Černá magie', count: 2, color: '#14251a',
-      text: 'Vezmi si 1 kartu kouzla od libovolného hráče.' },
-    { id: 'jazyk', name: 'Vystřelovací jazyk', count: 2, color: '#d9629c',
-      text: 'Seber kredity z jednoho sousedního pole.' },
-    { id: 'bublina', name: 'Bublina', count: 2, color: '#8fb6cf', passive: true,
-      text: 'Jednou tě ochrání před útokem Štiky nebo Volavky.' },
-    { id: 'helma', name: 'Helma', count: 2, color: '#6b4a24', passive: true,
-      text: 'Jednou tě ochrání před ztrátou 1 kreditu, když ti jiný hráč skočí na hlavu.' },
-    { id: 'zlata_muska', name: 'Zlatá muška', count: 2, color: '#c9c9c9',
-      text: 'Vezmi si 1 mouchu z banku.' },
-    { id: 'svetluska', name: 'Zářící světluška', count: 2, color: '#d8a72a',
-      text: 'Vezmi si 1 světlušku z banku.' },
-    { id: 'duhova_vazka', name: 'Duhová vážka', count: 1, color: '#57c2a8',
-      text: 'Vezmi si 1 vážku z banku.' },
-    { id: 'zamena', name: 'Záměna', count: 2, color: '#4a2a6b',
-      text: 'Prohoď si místo na herním plánu s hráčem, na kterého ukážeš.' },
-    { id: 'plovaky', name: 'Plováky', count: 2, color: '#2f88b4', passive: true,
-      text: 'Když tě má Vodní vír přemístit, můžeš zůstat jedno kolo nad ním bez přesouvání.' },
-    { id: 'kvakrobatika', name: 'Kvákrobatika', count: 2, color: '#d3a028', passive: true,
-      text: 'Když na tebe jiný hráč skáče, můžeš okamžitě uskočit o 1 pole v libovolném směru a vyhnout se následkům skoku.' },
-    { id: 'kraken', name: 'Kraken', count: 1, color: '#241812',
-      text: 'Všichni ostatní hráči odevzdají 1 kredit do banku.' },
-    { id: 'eko', name: 'Eko katastrofa', count: 1, color: '#0d0d0d',
-      text: 'Veškerý hmyz umístěný na herním plánu okamžitě zmizí. Hmyz, který již vlastní hráči, zůstává nedotčen.' },
-    { id: 'zabijak', name: 'Žabiják', count: 4, color: '#9aa0a6',
-      text: 'Každá žába, na jejíž hlavu v tomto kole skočíš, se okamžitě vrací na START.' }
+  /* Každá karta má český a anglický název i text; použije se jazyk hry. */
+  const CARDS = [
+    { id: 'volavka', count: 1, color: '#7d2b1f',
+      cs: ['Volavka', 'Útok zasáhne oblast 5 × 5 polí. Zasažení hráči – i ten, kdo kouzlo seslal, pokud stojí v oblasti – se vrátí na START. Sesílající získá veškerý hmyz z oblasti.'],
+      en: ['Heron', 'Strikes a 5 × 5 area. Every frog hit – including the caster, if standing there – returns to START. The caster collects all insects in the area.'] },
+    { id: 'stika', count: 2, color: '#c2560f',
+      cs: ['Štika', 'Útok zasáhne oblast 3 × 3 polí. Zasažení hráči – i ten, kdo kouzlo seslal, pokud stojí v oblasti – se vrátí na START. Sesílající získá veškerý hmyz z oblasti.'],
+      en: ['Pike', 'Strikes a 3 × 3 area. Every frog hit – including the caster, if standing there – returns to START. The caster collects all insects in the area.'] },
+    { id: 'hurikan', count: 1, color: '#1b3a63',
+      cs: ['Hurikán', 'Všichni hráči si předají své karty kouzel v ruce o jednoho hráče po směru hodinových ručiček.'],
+      en: ['Hurricane', 'All players pass the spell cards in their hand one player clockwise.'] },
+    { id: 'tajfun', count: 1, color: '#14161a',
+      cs: ['Tajfun', 'Všichni hráči si předají své karty kouzel v ruce o jednoho hráče proti směru hodinových ručiček.'],
+      en: ['Typhoon', 'All players pass the spell cards in their hand one player counter-clockwise.'] },
+    { id: 'cerna_ruka', count: 2, color: '#101014',
+      cs: ['Černá ruka', 'Vezmi si 1 kus hmyzu od libovolného hráče.'],
+      en: ['Black Hand', 'Take 1 insect from any player.'] },
+    { id: 'cerna_magie', count: 2, color: '#14251a',
+      cs: ['Černá magie', 'Vezmi si 1 kartu kouzla od libovolného hráče.'],
+      en: ['Black Magic', 'Take 1 spell card from any player.'] },
+    { id: 'jazyk', count: 2, color: '#d9629c',
+      cs: ['Vystřelovací jazyk', 'Seber hmyz z jednoho sousedního pole.'],
+      en: ['Shooting Tongue', 'Collect the insects from one neighboring field.'] },
+    { id: 'bublina', count: 2, color: '#8fb6cf', passive: true,
+      cs: ['Bublina', 'Jednou tě ochrání před útokem Štiky nebo Volavky.'],
+      en: ['Bubble', 'Protects you once from a Pike or Heron attack.'] },
+    { id: 'helma', count: 2, color: '#6b4a24', passive: true,
+      cs: ['Helma', 'Jednou tě ochrání před ztrátou 1 kreditu, když ti jiný hráč skočí na hlavu.'],
+      en: ['Helmet', 'Protects you once from losing a credit when another frog jumps on your head.'] },
+    { id: 'zlata_muska', count: 2, color: '#c9c9c9',
+      cs: ['Zlatá muška', 'Vezmi si 1 mouchu z banku.'],
+      en: ['Golden Fly', 'Take 1 fly from the bank.'] },
+    { id: 'svetluska', count: 2, color: '#d8a72a',
+      cs: ['Zářící světluška', 'Vezmi si 1 světlušku z banku.'],
+      en: ['Glowing Firefly', 'Take 1 firefly from the bank.'] },
+    { id: 'duhova_vazka', count: 1, color: '#57c2a8',
+      cs: ['Duhová vážka', 'Vezmi si 1 vážku z banku.'],
+      en: ['Rainbow Dragonfly', 'Take 1 dragonfly from the bank.'] },
+    { id: 'zamena', count: 2, color: '#4a2a6b',
+      cs: ['Záměna', 'Prohoď si místo na herním plánu s hráčem, na kterého ukážeš.'],
+      en: ['Swap', 'Swap places on the board with the player you point at.'] },
+    { id: 'plovaky', count: 2, color: '#2f88b4', passive: true,
+      cs: ['Plováky', 'Když tě má Vodní vír přemístit, můžeš zůstat na svém poli.'],
+      en: ['Floaties', 'When a Whirlpool is about to carry you away, you may stay on your field.'] },
+    { id: 'kvakrobatika', count: 2, color: '#d3a028', passive: true,
+      cs: ['Kvákrobatika', 'Když ti jiný hráč skáče na hlavu, můžeš uskočit o 1 pole kamkoli (i do vody, ne na jinou žábu) a vyhnout se následkům. Pole, kam uskočíš, platí jako po každém skoku.'],
+      en: ['Croakrobatics', 'When another frog jumps on your head, you may leap 1 field in any direction (even into water, not onto another frog) and avoid the consequences. The field you land on counts like after any jump.'] },
+    { id: 'kraken', count: 1, color: '#241812',
+      cs: ['Kraken', 'Všichni ostatní hráči odevzdají 1 kredit do banku.'],
+      en: ['Kraken', 'All other players pay 1 credit to the bank.'] },
+    { id: 'eko', count: 1, color: '#0d0d0d',
+      cs: ['Eko katastrofa', 'Veškerý hmyz umístěný na herním plánu okamžitě zmizí. Hmyz, který již vlastní hráči, zůstává nedotčen.'],
+      en: ['Eco Disaster', 'All insects on the board vanish at once. Insects already owned by players stay untouched.'] },
+    { id: 'zabijak', count: 4, color: '#9aa0a6',
+      cs: ['Žabiják', 'Každá žába, na jejíž hlavu do konce tohoto tahu skočíš, ti odevzdá 1 kredit a vrací se na START.'],
+      en: ['Frogslayer', 'Every frog whose head you jump on until the end of this turn gives you 1 credit and goes back to START.'] }
   ];
+  FL.CARDS = CARDS.map(c => {
+    const [name, text] = EN ? c.en : c.cs;
+    return { id: c.id, count: c.count, color: c.color, passive: !!c.passive, name, text, names: { cs: c.cs[0], en: c.en[0] } };
+  });
 
   FL.CARD_BY_ID = {};
   FL.CARDS.forEach(c => (FL.CARD_BY_ID[c.id] = c));

@@ -30,7 +30,8 @@
   const CELL_PCT = (FL.ART.DX / FL.ART.W) * 100 * 0.92;
   const TILES = FL.buildBoard();
   const tileAt = (r, c) => TILES[FL.key(r, c)];
-  const coord = (r, c) => FL.inLake(r, c) ? `${r}-${c}` : `břeh (${r},${c})`;
+  const coord = (r, c) => FL.inLake(r, c) ? `${r}-${c}` : M.shore(r, c);
+  const t = FL.t;
   const MAGIC_KEY = FL.key(FL.MAGIC_POS.r, FL.MAGIC_POS.c);
   const MEDAL = n => ['', '🥇', '🥈', '🥉'][n] || '🏅';
   const avatarImg = (idx, cls) =>
@@ -40,8 +41,10 @@
    * hraje se jen na jednom zařízení. Kód zůstává; true ji v menu znovu ukáže. */
   const NETWORK = FL.NETWORK === true;
 
-  const DEFAULT_NAMES = ['Kvákal', 'Skokan', 'Rosnička', 'Bahňák', 'Zelenka', 'Pulec', 'Ropušák', 'Blatnice'];
-  const BOT_NAMES = ['Robo-Kvak', 'Čip-Žabka', 'Kvak 3000', 'Bit-Skokan', 'Pixel-Pulec', 'Turbo-Rosnička', 'Data-Ropucha', 'Mega-Kuňka'];
+  const DEFAULT_NAMES = FL.t('defaultNames');
+  const BOT_NAMES = FL.t('botNames');
+  // jména hráčů se ukládají zvlášť pro každý jazyk (česká a anglická verze sdílejí úložiště)
+  const SEATS_KEY = FL.LANG === 'en' ? 'fl-seats-en' : 'fl-seats';
 
   // ================== STAV UI ==================
   const S = {
@@ -59,7 +62,7 @@
   };
 
   // ================== MENU ==================
-  let seats = store.get('fl-seats', null) || [
+  let seats = store.get(SEATS_KEY, null) || [
     { name: DEFAULT_NAMES[0], bot: false },
     { name: BOT_NAMES[0], bot: true },
     { name: BOT_NAMES[1], bot: true }
@@ -75,7 +78,7 @@
     });
   }
   fixAvatars();
-  const saveSeats = () => store.set('fl-seats', seats);
+  const saveSeats = () => store.set(SEATS_KEY, seats);
 
   function showScreen(id) {
     ['menu', 'lobby', 'game'].forEach(s => $(s).classList.toggle('hidden', s !== id));
@@ -88,7 +91,7 @@
     seats.forEach((s, i) => {
       const row = el('div', 'seat');
       const av = el('button', 'av-btn', avatarImg(s.avatar, 'seat-frog') + '<span class="av-edit">✎</span>');
-      av.title = 'Vybrat žábu';
+      av.title = t('pickFrog');
       av.onclick = () => pickAvatar(s.avatar, seats.map((o, k) => k !== i ? { avatar: o.avatar, name: o.name } : null).filter(Boolean), a => {
         const other = seats.find(o => o !== s && o.avatar === a);
         if (other) other.avatar = s.avatar;            // vybraná žába je obsazená → prohodí se
@@ -100,8 +103,8 @@
       inp.maxLength = 16;
       inp.value = s.name;
       inp.oninput = () => { s.name = inp.value; saveSeats(); };
-      const type = el('button', 'seat-type' + (s.bot ? ' bot' : ''), s.bot ? '🤖 Počítač' : '👤 Hráč');
-      type.title = 'Přepnout hráč / počítač';
+      const type = el('button', 'seat-type' + (s.bot ? ' bot' : ''), s.bot ? t('bot') : t('human'));
+      type.title = t('toggleType');
       type.onclick = () => {
         s.bot = !s.bot;
         if (s.bot && DEFAULT_NAMES.includes(s.name)) s.name = BOT_NAMES[i];
@@ -109,7 +112,7 @@
         saveSeats(); renderSeats();
       };
       const rm = el('button', 'seat-rm', '×');
-      rm.title = 'Odebrat';
+      rm.title = t('remove');
       rm.disabled = seats.length <= 1;
       rm.onclick = () => { seats.splice(i, 1); saveSeats(); renderSeats(); };
       row.append(av, inp, type, rm);
@@ -118,8 +121,8 @@
     $('addHuman').disabled = $('addBot').disabled = seats.length >= FL.MAX_PLAYERS;
     const bots = seats.filter(s => s.bot).length;
     $('startBtn').textContent = seats.length === 1
-      ? 'Začít sólo hru'
-      : `Začít hru (${seats.length} ${seats.length < 5 ? 'žáby' : 'žab'}${bots ? `, ${bots} ${bots === 1 ? 'počítač' : bots < 5 ? 'počítače' : 'počítačů'}` : ''})`;
+      ? t('startSolo')
+      : t('startGame', seats.length, bots);
   }
 
   function addSeat(bot) {
@@ -152,14 +155,14 @@
   function pickAvatar(current, taken, onPick, allowSwap) {
     const takenBy = {};
     taken.forEach(t => (takenBy[t.avatar] = t.name));
-    let html = '<h2>Vyber si svou žábu</h2><div class="av-grid">';
+    let html = `<h2>${t('avTitle')}</h2><div class="av-grid">`;
     for (let i = 0; i < FL.MAX_PLAYERS; i++) {
       const who = takenBy[i];
       const dis = who != null && !allowSwap;
       html += `<button class="av-pick${i === current ? ' on' : ''}${who != null ? ' taken' : ''}" data-av="${i}" ${dis ? 'disabled' : ''}>
-        ${avatarImg(i, 'av-big')}<span>${i === current ? 'tvoje žába' : who != null ? esc(who) + (allowSwap ? ' ⇄' : '') : 'volná'}</span></button>`;
+        ${avatarImg(i, 'av-big')}<span>${i === current ? t('avMine') : who != null ? esc(who) + (allowSwap ? ' ⇄' : '') : t('avFree')}</span></button>`;
     }
-    html += '</div><p class="note">' + (allowSwap ? 'Klikem na obsazenou žábu si ji s jejím hráčem prohodíš.' : 'Obsazené žáby už mají jiní hráči.') + '</p>';
+    html += '</div><p class="note">' + (allowSwap ? t('avSwapNote') : t('avTakenNote')) + '</p>';
     showModal(html, 'av-modal');
     document.querySelectorAll('.av-pick').forEach(b => (b.onclick = () => {
       hideModal();
@@ -294,15 +297,15 @@
   }
 
   function tooltip(r, c) {
-    const t = tileAt(r, c);
-    let s = FL.TILE_NAME[t.type];
+    const tl = tileAt(r, c);
+    let s = FL.TILE_NAME[tl.type];
     if (FL.inLake(r, c)) s += ` ${r}-${c}`;
-    if (t.type === T.WHIRL) s += ' – o 2 pole, šipky: ' + t.dirs.map(d => FL.arrowGlyph(d[0], d[1])).join(' ');
-    if (t.type === T.TRAMPOLINE) s += ' – o 3 pole, šipky: ' + t.dirs.map(d => FL.arrowGlyph(d[0], d[1])).join(' ');
-    if (t.type === T.BIG) s += ' – odsud lze provést veleskok';
-    if (t.type === T.MAGIC) s += ' – vítězné pole, sem se skáče veleskokem z velkého leknínu';
-    if (t.type === T.MUD) s += ' – příští tah se vynechává';
-    if (t.type === T.WATER) s += ' – návrat na START';
+    if (tl.type === T.WHIRL) s += t('tipWhirl') + tl.dirs.map(d => FL.arrowGlyph(d[0], d[1])).join(' ');
+    if (tl.type === T.TRAMPOLINE) s += t('tipTramp') + tl.dirs.map(d => FL.arrowGlyph(d[0], d[1])).join(' ');
+    if (tl.type === T.BIG) s += t('tipBig');
+    if (tl.type === T.MAGIC) s += t('tipMagic');
+    if (tl.type === T.MUD) s += t('tipMud');
+    if (tl.type === T.WATER) s += t('tipWater');
     return s;
   }
 
@@ -387,8 +390,8 @@
     const other = !ready && !halted(s) && p && p.tag === 'move' && p.leap;
     glow.classList.toggle('ready', !!ready);
     glow.classList.toggle('charged', !!other);
-    glow.querySelector('.mg-label').textContent = ready ? `Veleskok! −${s.settings.leapPrice} kr.` : '';
-    glow.title = ready ? 'Klikni a skoč na Kouzelný leknín!' : 'Kouzelný leknín – vítězné pole';
+    glow.querySelector('.mg-label').textContent = ready ? t('leapLabel', s.settings.leapPrice) : '';
+    glow.title = ready ? t('magicReadyTitle') : t('magicTitle');
   }
 
   /* Šipky víru / trampolíny od žáby k zvýrazněným cílům. */
@@ -497,29 +500,29 @@
     const show = halted(s) && lastFinisher ? lastFinisher : s.players[actorId];
     $('turnAv').innerHTML = avatarImg(show.idx);
     $('turnName').textContent = halted(s) ? show.name :
-      (actorId !== s.cur ? `${show.name} (v tahu hráče ${cur.name})` : show.name);
-    $('roundNo').textContent = s.phase === 'setup' ? 'Rozmístění žab' : 'Kolo ' + s.round;
+      (actorId !== s.cur ? t('inTurnOf', show.name, cur.name) : show.name);
+    $('roundNo').textContent = s.phase === 'setup' ? t('setupPhase') : t('round', s.round);
 
     const hint = $('hint');
     hint.className = 'hint';
     let text;
-    if (s.over) text = '🏁 ' + M.gameOver() + ' Nová hra (N) nebo konec (Q).';
+    if (s.over) text = '🏁 ' + M.gameOver() + t('overHint');
     else if (s.phase === 'won') {
-      text = `${MEDAL(lastFinisher.place)} ${lastFinisher.name} je na Kouzelném leknínu! ` +
-        (decides() ? 'C = dohrát na pořadí, N = nová hra, Q = opustit hru.' : 'Hostitel rozhoduje, jak se bude pokračovat…');
+      text = `${MEDAL(lastFinisher.place)} ` + t('onLily', lastFinisher.name) +
+        (decides() ? t('decideKeys') : t('hostDecides'));
       hint.classList.add('mine');
     } else if (s.paused) {
       const by = s.paused.by != null ? s.players[s.paused.by].name : null;
-      text = `⏸ Hra stojí – ${by ? 'Akci vyvolává ' + by : 'Akce'}. Použijte světlušky a kouzla; hra pokračuje po akci, tlačítkem nebo za chvilku sama.`;
+      text = t('paused', by);
       hint.classList.add('mine');
     } else if (s.pending) {
       const who = s.players[s.pending.actorId];
       if (controls(who.id)) { text = '👉 ' + s.pending.hint; hint.classList.add('mine'); }
-      else if (who.bot) text = `🤖 ${who.name} přemýšlí…`;
-      else text = `⏳ Čeká se na hráče ${who.name}…`;
+      else if (who.bot) text = t('thinking', who.name);
+      else text = t('waiting', who.name);
     } else if (s.phase === 'roll') {
       if (controls(cur.id)) { text = '👉 ' + M.hint.roll(cur.name); hint.classList.add('mine'); }
-      else text = cur.bot ? `🤖 ${cur.name} hází kostkami…` : `⏳ Na tahu je ${cur.name}.`;
+      else text = cur.bot ? t('botRolls', cur.name) : t('onTurn', cur.name);
     } else if (s.phase === 'done') text = s.skipping ? '💤 ' + M.hint.skip(cur.name) : M.hint.done();
     else text = '…';
     hint.textContent = text;
@@ -605,30 +608,30 @@
     const pend = s.pending;
 
     if (halted(s)) {
-      if (s.phase === 'won' && decides()) a.append(mkBtn('▶ Dohrát na pořadí (C)', 'primary main', continueGame));
-      a.append(mkBtn('🔄 Nová hra (N)', s.over ? 'primary main' : '', askNewGame));
-      a.append(mkBtn('🏠 Opustit hru (Q)', 'ghost', askQuit));
+      if (s.phase === 'won' && decides()) a.append(mkBtn(t('btnContinue'), 'primary main', continueGame));
+      a.append(mkBtn(t('btnNew'), s.over ? 'primary main' : '', askNewGame));
+      a.append(mkBtn(t('btnQuit'), 'ghost', askQuit));
       return;
     }
     if (s.paused) {
-      a.append(mkBtn('▶ Pokračovat ve hře', 'primary main', () => { closeAction(true); dispatch({ type: 'resume' }); }));
-      a.append(mkBtn('✨ Akce (mezerník)', 'action-btn', () => { if (!S.actionUI) toggleAction(); }));
+      a.append(mkBtn(t('btnResume'), 'primary main', () => { closeAction(true); dispatch({ type: 'resume' }); }));
+      a.append(mkBtn(t('btnAction'), 'action-btn', () => { if (!S.actionUI) toggleAction(); }));
       return;
     }
     if (s.phase === 'setup' && S.mode === 'local' && pend && controls(pend.actorId))
-      a.append(mkBtn('🎲 Rozmístit náhodně', null, () => dispatch({ type: 'randomStarts' })));
+      a.append(mkBtn(t('btnRandom'), null, () => dispatch({ type: 'randomStarts' })));
 
     if (pend && pend.kind === 'choice' && controls(pend.actorId))
       pend.options.forEach((o, i) => a.append(mkBtn(o, i === 0 ? 'primary' : null, () => dispatch({ type: 'option', i }))));
 
     if (s.phase === 'roll' && !pend && controls(cur.id))
-      a.append(mkBtn('🎲 Hoď kostkami', 'primary main', () => dispatch({ type: 'roll' })));
+      a.append(mkBtn(t('btnRoll'), 'primary main', () => dispatch({ type: 'roll' })));
     if (s.phase === 'done' && !pend && controls(cur.id))
-      a.append(mkBtn('Další hráč ▶', 'primary main', () => dispatch({ type: 'next' })));
+      a.append(mkBtn(t('btnNext'), 'primary main', () => dispatch({ type: 'next' })));
     if (pend && pend.cancel && controls(pend.actorId))
-      a.append(mkBtn('Zrušit (Esc)', 'ghost', () => dispatch({ type: 'cancel' })));
+      a.append(mkBtn(t('btnCancel'), 'ghost', () => dispatch({ type: 'cancel' })));
     if (s.canAct && s.phase !== 'setup' && (S.mode === 'remote' ? !s.players[S.mySeat].done : eligiblePlayers(s).length))
-      a.append(mkBtn('✨ Akce (mezerník)', 'action-btn', toggleAction));
+      a.append(mkBtn(t('btnAction'), 'action-btn', toggleAction));
   }
 
   function mkBtn(label, cls, fn) {
@@ -640,7 +643,7 @@
   function continueGame() {
     const s = S.snap;
     if (!s || s.phase !== 'won') return;
-    if (!decides()) return notify('O pokračování rozhoduje hostitel.', 'sys');
+    if (!decides()) return notify(t('hostDecidesNote'), 'sys');
     hideModal();
     dispatch({ type: 'continue' });
   }
@@ -650,9 +653,9 @@
   const shownCredits = p => (p.done && p.finalCredits != null ? p.finalCredits : p.credits);
 
   function renderScore(s) {
-    const t = $('score');
+    const tbl = $('score');
     const price = s.settings.leapPrice;
-    $('leapInfo').textContent = `veleskok ${price} kr.`;
+    $('leapInfo').textContent = t('leapInfo', price);
     $('inviteMore').classList.toggle('hidden', !(S.link && S.link.kind === 'wifi-host'));
     const pend = s.pending;
     const pickable = pend && pend.kind === 'player' && controls(pend.actorId) ? new Set(pend.players) : null;
@@ -669,28 +672,28 @@
       if (p.done) cls.push('winner');
       const cr = shownCredits(p);
       const pct = Math.min(100, cr / price * 100);
-      const marks = (p.id === s.cur && live && !p.done ? '<span class="mk turn-mk" title="Na tahu">▶</span>' : '') +
-        (p.bot ? '<span class="mk" title="Počítač">🤖</span>' : '') +
-        (p.offline ? '<span class="mk" title="Odpojen – hraje autopilot">📴</span>' : '') +
-        (p.skipTurn ? '<span class="mk" title="V bažině – příští tah vynechá">💤</span>' : '') +
-        (S.mode === 'remote' && p.id === S.mySeat ? '<span class="mk you">ty</span>' : '');
+      const marks = (p.id === s.cur && live && !p.done ? `<span class="mk turn-mk" title="${t('onTurnTitle')}">▶</span>` : '') +
+        (p.bot ? `<span class="mk" title="${t('botTitle')}">🤖</span>` : '') +
+        (p.offline ? `<span class="mk" title="${t('offlineTitle')}">📴</span>` : '') +
+        (p.skipTurn ? `<span class="mk" title="${t('mudTitle')}">💤</span>` : '') +
+        (S.mode === 'remote' && p.id === S.mySeat ? `<span class="mk you">${t('you')}</span>` : '');
       const rk = p.done || (s.over && p.place) ? MEDAL(p.place) : (rank + 1) + '.';
       return `<tr class="${cls.join(' ')}" data-id="${p.id}">
         <td class="nm"><div class="nmw"><span class="rk">${rk}</span>${avatarImg(p.idx)}<span class="n">${esc(p.name)}</span>${marks}</div></td>
-        <td class="cr"${p.done ? ' title="Kredity těsně před veleskokem"' : ''}><b>${cr}</b><span class="bar"><i style="width:${pct}%"></i></span></td>
+        <td class="cr"${p.done ? ` title="${t('creditsBeforeLeap')}"` : ''}><b>${cr}</b><span class="bar"><i style="width:${pct}%"></i></span></td>
         <td class="num">${p.insects.dragonfly}</td>
         <td class="num">${p.insects.firefly}</td>
         <td class="num">${p.insects.fly}</td>
-        <td class="sp">${p.handCount > 0 ? '<span class="yes" title="Má kouzlo">✨ ano</span>' : '<span class="no">ne</span>'}</td>
+        <td class="sp">${p.handCount > 0 ? `<span class="yes" title="${t('hasSpell')}">${t('yes')}</span>` : `<span class="no">${t('no')}</span>`}</td>
       </tr>`;
     }).join('');
 
-    t.innerHTML = `<thead><tr>
-        <th>Hráč</th><th title="Kredity celkem">Kredity</th>
-        <th title="Vážky">${img('dragonfly')}</th><th title="Světlušky">${img('firefly')}</th><th title="Mouchy">${img('fly')}</th>
-        <th title="Má hráč kouzlo?">Kouzlo</th></tr></thead><tbody>${rows}</tbody>`;
+    tbl.innerHTML = `<thead><tr>
+        <th>${t('thPlayer')}</th><th title="${t('thCreditsTitle')}">${t('thCredits')}</th>
+        <th>${img('dragonfly')}</th><th>${img('firefly')}</th><th>${img('fly')}</th>
+        <th title="${t('thSpellTitle')}">${t('thSpell')}</th></tr></thead><tbody>${rows}</tbody>`;
 
-    t.querySelectorAll('tr.srow.pickable').forEach(tr => {
+    tbl.querySelectorAll('tr.srow.pickable').forEach(tr => {
       tr.onclick = () => {
         const id = +tr.dataset.id;
         if (who) openActionFor(id);
@@ -723,7 +726,7 @@
     const box = $('dice');
     if (!box.dataset.built) {
       box.innerHTML = '';
-      [['d10', 'zelená D10', 'událost', d10Svg()], ['black', 'černá D12', 'řádek', d12Svg('black')], ['white', 'bílá D12', 'sloupec', d12Svg('white')]]
+      [['d10', t('dieGreen'), t('roleEvent'), d10Svg()], ['black', t('dieBlack'), t('roleRow'), d12Svg('black')], ['white', t('dieWhite'), t('roleCol'), d12Svg('white')]]
         .forEach(([k, name, role, svg]) => {
           const d = el('div', 'die die-' + k, `${svg}<span class="dn">${name}</span><span class="dr">${role}</span>`);
           box.append(d);
@@ -763,28 +766,29 @@
     ds[0].classList.toggle('special', dice.d10 === 10);
     ds[1].classList.toggle('special', dice.black === 12);
     ds[2].classList.toggle('special', dice.white === 12);
-    ds[0].querySelector('.dr').textContent = dice.d10 === 10 ? 'Vodník!' : dice.d10 <= 3 ? 'moucha' : dice.d10 <= 6 ? 'světluška' : 'vážka';
-    ds[1].querySelector('.dr').textContent = dice.black === 12 ? 'volba řádku' : 'řádek ' + dice.black;
-    ds[2].querySelector('.dr').textContent = dice.white === 12 ? 'volba sloupce' : 'sloupec ' + dice.white;
+    const F = FL.INSECT_FORMS;
+    ds[0].querySelector('.dr').textContent = dice.d10 === 10 ? t('diceVodnik') : dice.d10 <= 3 ? F.fly.one : dice.d10 <= 6 ? F.firefly.one : F.dragonfly.one;
+    ds[1].querySelector('.dr').textContent = dice.black === 12 ? t('rowChoice') : t('rowN', dice.black);
+    ds[2].querySelector('.dr').textContent = dice.white === 12 ? t('colChoice') : t('colN', dice.white);
   }
 
   function renderEventText(s) {
     const box = $('eventText');
     const ev = s.event;
-    $('eventWho').textContent = ev && s.players[ev.playerId] ? 'hází ' + s.players[ev.playerId].name : '';
+    $('eventWho').textContent = ev && s.players[ev.playerId] ? t('rolls', s.players[ev.playerId].name) : '';
     if (!ev) {
-      box.innerHTML = '<p class="ev-empty">Jezero je zatím klidné… První hod kostkami přivolá hmyz nebo Vodníka Lojzíka.</p>';
+      box.innerHTML = `<p class="ev-empty">${t('lakeCalm')}</p>`;
       return;
     }
     if (Date.now() < S.revealAt) {
-      box.innerHTML = '<p class="ev-empty">Kostky se kutálejí…</p>';
+      box.innerHTML = `<p class="ev-empty">${t('diceRolling')}</p>`;
       return;
     }
     const icon = ev.kind === 'vodnik' ? '<span class="ev-icon vodnik">🧜</span>'
       : `<img class="ev-icon" src="${FL.INSECTS[ev.kind].img}" alt="">`;
     let chip = '';
-    if (ev.r != null) chip = FL.isMagic(ev.r, ev.c) ? 'Kouzelný leknín 6-6' : FL.inLake(ev.r, ev.c) ? `řádek ${ev.r} · sloupec ${ev.c}` : coord(ev.r, ev.c);
-    if (ev.chosen) chip += ' (volba)';
+    if (ev.r != null) chip = FL.isMagic(ev.r, ev.c) ? t('chipMagic') : FL.inLake(ev.r, ev.c) ? t('chipRowCol', ev.r, ev.c) : coord(ev.r, ev.c);
+    if (ev.chosen) chip += t('chipChosen');
     const gainer = ev.gainedBy != null ? s.players[ev.gainedBy] : null;
     const gain = gainer
       ? `<div class="ev-gain">${avatarImg(gainer.idx)}+${ev.kind === 'dragonfly' ? 2 : 1} kr. pro ${esc(gainer.name)}</div>` : '';
@@ -798,15 +802,15 @@
 
   // ================== KLÁVESY ==================
   const HOTKEYS = [
-    { k: 's', cap: 'S', label: () => 'Zvukové efekty: ' + (A.sfx ? 'ZAP' : 'VYP'), on: () => A.sfx },
-    { k: 'm', cap: 'M', label: () => 'Hudba: ' + (A.music ? 'ZAP' : 'VYP'), on: () => A.music },
-    { k: ' ', cap: 'Mezerník', label: () => 'Akce – použít světlušku nebo kouzlo (kdykoli během hry)', on: () => !!S.actionUI, wide: true },
-    { k: 'r', cap: 'R', label: () => 'Pravidla hry' },
-    { k: 'c', cap: 'C', label: () => 'Dohrát na pořadí' },
-    { k: 'n', cap: 'N', label: () => 'Nová hra' },
-    { k: 'q', cap: 'Q', label: () => 'Opustit hru' },
-    { k: 'enter', cap: 'Enter', label: () => 'Hodit kostkami / další hráč' },
-    { k: 'escape', cap: 'Esc', label: () => 'Zavřít / zrušit' }
+    { k: 's', cap: 'S', label: () => t('hkSfx', A.sfx), on: () => A.sfx },
+    { k: 'm', cap: 'M', label: () => t('hkMusic', A.music), on: () => A.music },
+    { k: ' ', cap: t('capSpace'), label: () => t('hkAction'), on: () => !!S.actionUI, wide: true },
+    { k: 'r', cap: 'R', label: () => t('hkRules') },
+    { k: 'c', cap: 'C', label: () => t('hkContinue') },
+    { k: 'n', cap: 'N', label: () => t('hkNew') },
+    { k: 'q', cap: 'Q', label: () => t('hkQuit') },
+    { k: 'enter', cap: 'Enter', label: () => t('hkEnter') },
+    { k: 'escape', cap: 'Esc', label: () => t('hkEsc') }
   ];
 
   function renderHotkeys() {
@@ -820,8 +824,8 @@
       b.onclick = () => { A.unlock(); handleKey(h.k); };
       box.append(b);
     });
-    $('menuSfx').textContent = (A.sfx ? '🔊' : '🔈') + ' Zvuky ' + (A.sfx ? 'ZAP' : 'VYP') + ' (S)';
-    $('menuMusic').textContent = '🎵 Hudba ' + (A.music ? 'ZAP' : 'VYP') + ' (M)';
+    $('menuSfx').textContent = t('menuSfx', A.sfx);
+    $('menuMusic').textContent = t('menuMusic', A.music);
   }
 
   // ================== KRONIKA ==================
@@ -832,7 +836,7 @@
     l.dataset.top = top;
     l.innerHTML = '';
     s.log.slice(0, 60).forEach(line => l.append(el('div', line.cls, esc(line.msg))));
-    $('deckInfo').textContent = `Balíček kouzel: ${s.deck} · odhozeno: ${s.discard}`;
+    $('deckInfo').textContent = t('deckInfo', s.deck, s.discard);
   }
 
   // ================== AKCE (MEZERNÍK) ==================
@@ -842,16 +846,16 @@
     if (!s || halted(s) || s.phase === 'setup') return;
     if (!s.canAct) {
       const who = s.pending ? nameOf(s.pending.actorId) : '';
-      notify(`Teď to nejde – nejdřív musí rozhodnout ${who}.`, 'sys');
+      notify(t('cantNow', who), 'sys');
       return;
     }
     if (S.mode === 'remote') {
-      if (s.players[S.mySeat].done) return notify('Tvoje žába už je v cíli.', 'sys');
+      if (s.players[S.mySeat].done) return notify(t('frogDone'), 'sys');
       dispatch({ type: 'pause', who: S.mySeat });
       return openActionFor(S.mySeat);
     }
     const list = eligiblePlayers(s);
-    if (!list.length) { notify('Nikdo teď nemá světlušku ani kouzlo.', 'sys'); return; }
+    if (!list.length) { notify(t('nobodyHas'), 'sys'); return; }
     // Akce zastaví hru (max. 10 s), aby šlo v klidu kouzlit
     dispatch({ type: 'pause', who: list.length === 1 ? list[0].id : null });
     if (list.length === 1) return openActionFor(list[0].id);
@@ -883,11 +887,11 @@
     const ui = S.actionUI;
     if (!ui) { box.classList.add('hidden'); return; }
     box.classList.remove('hidden');
-    const close = '<button class="am-close" aria-label="Zavřít">×</button>';
+    const close = `<button class="am-close" aria-label="${t('close')}">×</button>`;
 
     if (ui.step === 'who') {
-      box.innerHTML = `${close}<h3>✨ Akce – kdo hraje?</h3>
-        <p class="note">Vyber žábu tady, v tabulce, nebo klikni na ni na plánu.</p><div class="am-who"></div>`;
+      box.innerHTML = `${close}<h3>${t('amWhoTitle')}</h3>
+        <p class="note">${t('amWhoNote')}</p><div class="am-who"></div>`;
       const w = box.querySelector('.am-who');
       eligiblePlayers(s).forEach(p => {
         const b = el('button', 'am-player',
@@ -901,19 +905,19 @@
       if (!p) return closeAction();
       const targets = s.players.filter(o => o.id !== p.id && !o.done && o.credits > 0);
       const canFire = s.canAct && p.insects.firefly > 0 && targets.length > 0;
-      box.innerHTML = `${close}<h3>${avatarImg(p.idx)} Akce: ${esc(p.name)}</h3>
-        <div class="am-sec"><h4><img src="${FL.INSECTS.firefly.img}" alt=""> Světluška <small>máš ${p.insects.firefly}</small></h4>
-          <p class="note">Vrátíš světlušku do banku a vybranému hráči sebereš 1 kredit.</p>
+      box.innerHTML = `${close}<h3>${avatarImg(p.idx)} ${esc(t('amTitle', p.name))}</h3>
+        <div class="am-sec"><h4><img src="${FL.INSECTS.firefly.img}" alt=""> ${t('amFirefly')} <small>${t('youHave', p.insects.firefly)}</small></h4>
+          <p class="note">${t('amFireflyNote')}</p>
           <div class="am-fire"></div></div>
-        <div class="am-sec"><h4>🃏 Kouzla <small>${p.hand ? p.hand.length : 0}</small></h4><div class="am-cards"></div></div>
-        <div class="am-sec am-bank-sec"><h4>🏦 Banka</h4><div class="am-bank"></div></div>
-        <p class="note am-foot">Mezerník nebo Esc = zavřít</p>`;
+        <div class="am-sec"><h4>${t('amSpells')} <small>${p.hand ? p.hand.length : 0}</small></h4><div class="am-cards"></div></div>
+        <div class="am-sec am-bank-sec"><h4>${t('amBank')}</h4><div class="am-bank"></div></div>
+        <p class="note am-foot">${t('amFoot')}</p>`;
       const fire = box.querySelector('.am-fire');
-      const fb = mkBtn('🔦 Zaútočit světluškou', 'primary', () => { closeAction(true); dispatch({ type: 'firefly', who: p.id }); });
+      const fb = mkBtn(t('amFireBtn'), 'primary', () => { closeAction(true); dispatch({ type: 'firefly', who: p.id }); });
       fb.disabled = !canFire;
       fire.append(fb);
-      if (!p.insects.firefly) fire.append(el('span', 'note', ' Nemáš žádnou světlušku.'));
-      else if (!targets.length) fire.append(el('span', 'note', ' Nikdo jiný nemá kredit.'));
+      if (!p.insects.firefly) fire.append(el('span', 'note', t('noFirefly')));
+      else if (!targets.length) fire.append(el('span', 'note', t('noTargets')));
 
       const cards = box.querySelector('.am-cards');
       (p.hand || []).forEach(c => {
@@ -921,22 +925,22 @@
         const d = el('div', 'am-card' + (def.passive ? ' passive' : ''));
         d.style.setProperty('--cc', def.color);
         d.innerHTML = `<b>${esc(def.name)}</b><p>${esc(def.text)}</p>`;
-        if (def.passive) d.append(el('span', 'tag', 'pasivní – nabídne se samo'));
+        if (def.passive) d.append(el('span', 'tag', t('passiveTag')));
         else {
-          const b = mkBtn('Seslat', 'primary mini', () => { closeAction(true); dispatch({ type: 'card', uid: c.uid, who: p.id }); });
+          const b = mkBtn(t('cast'), 'primary mini', () => { closeAction(true); dispatch({ type: 'card', uid: c.uid, who: p.id }); });
           b.disabled = !s.canAct;
           d.append(b);
         }
         cards.append(d);
       });
-      if (!p.hand || !p.hand.length) cards.append(el('p', 'note', 'Žádná kouzla. Karty kouzel dávají Houby na břehu.'));
+      if (!p.hand || !p.hand.length) cards.append(el('p', 'note', t('noSpells')));
 
       const bank = box.querySelector('.am-bank');
-      if (p.insects.dragonfly > 0) bank.append(mkBtn('Vážka → 2 mouchy', 'mini', () => dispatch({ type: 'exchange', dir: 'split', who: p.id })));
-      if (p.insects.fly >= 2) bank.append(mkBtn('2 mouchy → vážka', 'mini', () => dispatch({ type: 'exchange', dir: 'merge', who: p.id })));
+      if (p.insects.dragonfly > 0) bank.append(mkBtn(t('split'), 'mini', () => dispatch({ type: 'exchange', dir: 'split', who: p.id })));
+      if (p.insects.fly >= 2) bank.append(mkBtn(t('merge'), 'mini', () => dispatch({ type: 'exchange', dir: 'merge', who: p.id })));
       if (!bank.children.length) box.querySelector('.am-bank-sec').classList.add('hidden');
       if (S.mode === 'local' && eligiblePlayers(s).length > 1) {
-        const back = mkBtn('← jiný hráč', 'ghost mini', () => { S.actionUI = { step: 'who' }; render(); });
+        const back = mkBtn(t('otherPlayer'), 'ghost mini', () => { S.actionUI = { step: 'who' }; render(); });
         box.querySelector('h3').append(back);
       }
     }
@@ -962,18 +966,12 @@
   }
 
   function legendHtml() {
-    return '<h2>Kde co na plánu najdeš</h2><div class="legend">' +
-      '<div><b>Bažina</b> – tmavé bažiny na břehu hned vedle Hub a STARTů (pozice 1, 5, 7 a 11 každé strany).</div>' +
-      '<div><b>Trampolína</b> – černý kruh v oranžovém rámu vedle STARTu.</div>' +
-      '<div><b>Voda</b> – modrá hladina bez leknínu (rohy jezera a prstenec kolem Kouzelného leknínu).</div>' +
-      '<div><b>Vodní vír</b> – zvířená voda na okrajích jezera. Najeď myší na pole a uvidíš jeho šipky.</div>' +
-      '<div><b>Kouzelný leknín</b> – růžový lotos uprostřed. Kdo stojí na velkém leknínu a má dost kreditů, ' +
-      'uvidí ho zářit a klikne na něj.</div></div>';
+    return t('legend');
   }
 
   function confirmBox(text, yes, onYes) {
     showModal(`<div class="confirm"><h2>${esc(text)}</h2><div class="actions">
-      <button class="primary" id="cfYes">${esc(yes)} (Enter)</button><button class="ghost" id="cfNo">Zpět (Esc)</button></div></div>`);
+      <button class="primary" id="cfYes">${esc(yes)} (Enter)</button><button class="ghost" id="cfNo">${t('confirmBack')}</button></div></div>`);
     S.confirm = () => { hideModal(); onYes(); };
     $('cfYes').onclick = S.confirm;
     $('cfNo').onclick = hideModal;
@@ -981,9 +979,9 @@
 
   function askQuit() {
     if (!S.mode) return;
-    const what = S.link && S.link.kind === 'wifi-host' ? 'Opravdu ukončit hru? Ostatní hráči se odpojí.'
-      : S.mode === 'remote' ? 'Opravdu opustit hru? Tvou žábu převezme autopilot.' : 'Opravdu ukončit hru?';
-    confirmBox(what, 'Opustit hru', quitGame);
+    const what = S.link && S.link.kind === 'wifi-host' ? t('quitWifi')
+      : S.mode === 'remote' ? t('quitRemote') : t('quitLocal');
+    confirmBox(what, t('quitBtn'), quitGame);
   }
 
   function leaveRemote() {
@@ -1002,8 +1000,8 @@
 
   function askNewGame() {
     if (!S.mode) return;
-    if (S.mode === 'remote' && !S.host) { notify('Novou hru může spustit hostitel.', 'sys'); return; }
-    confirmBox('Začít novou hru?', 'Nová hra', newGame);
+    if (S.mode === 'remote' && !S.host) { notify(t('hostNewOnly'), 'sys'); return; }
+    confirmBox(t('newQ'), t('newBtn'), newGame);
   }
 
   function newGame() {
@@ -1020,28 +1018,28 @@
     const confetti = Array.from({ length: 36 }, (_, i) =>
       `<i style="left:${Math.random() * 100}%;animation-delay:${(Math.random() * 1.2).toFixed(2)}s;background:${FL.FROG_COLORS[i % 8]}"></i>`).join('');
     const rows = ranking.map(p => {
-      const place = p.done || (s.over && p.place) ? MEDAL(p.place) + ' ' + p.place + '.' : '…';
+      const place = p.done || (s.over && p.place) ? MEDAL(p.place) + ' ' + t('place', p.place) : '…';
       return `<li class="${p.done ? 'done' : ''}"><span class="pl">${place}</span>${avatarImg(p.idx)}<b>${esc(p.name)}</b>` +
-        `<span class="kr"${p.done ? ' title="Kredity těsně před veleskokem"' : ''}>${shownCredits(p)} kr.</span></li>`;
+        `<span class="kr"${p.done ? ` title="${t('creditsBeforeLeap')}"` : ''}>${shownCredits(p)} ${t('cr')}</span></li>`;
     }).join('');
     const canC = s.phase === 'won' && !s.over;
     setTimeout(() => {
       if (!S.snap || S.snap.finishOrder.length !== S.finishShown) return;
       showModal(`<div class="win-box"><div class="confetti">${confetti}</div>
         <img src="${FL.FROG_IMG(last.idx)}" alt="" class="win-frog">
-        <h2>${first ? '🏆 ' + esc(last.name) + ' vyhrává!' : MEDAL(last.place) + ' ' + esc(last.name) + ' bere ' + last.place + '. místo!'}</h2>
-        <p>${s.over ? 'Hra je u konce – tady je konečné pořadí.' : 'Veleskok vyšel! Chcete hrát dál o další místa?'}</p>
+        <h2>${first ? esc(t('wins', last.name)) : esc(t('takesPlace', MEDAL(last.place), last.name, last.place))}</h2>
+        <p>${s.over ? t('overText') : t('leapOk')}</p>
         <ol class="final">${rows}</ol>
         ${statsHtml(s, ranking)}
         <div class="actions">
-          ${canC ? `<button class="primary" id="finC" ${decides() ? '' : 'disabled'}>▶ Pokračovat – dohrát na pořadí (C)</button>` : ''}
-          <button class="${canC ? '' : 'primary'}" id="finN">🔄 Nová hra (N)</button>
-          <button class="ghost" id="finQ">🏠 Opustit hru (Q)</button>
+          ${canC ? `<button class="primary" id="finC" ${decides() ? '' : 'disabled'}>${t('finC')}</button>` : ''}
+          <button class="${canC ? '' : 'primary'}" id="finN">${t('btnNew')}</button>
+          <button class="ghost" id="finQ">${t('btnQuit')}</button>
         </div>
-        ${canC && !decides() ? '<p class="note">O pokračování rozhoduje hostitel.</p>' : ''}
+        ${canC && !decides() ? `<p class="note">${t('hostDecidesNote')}</p>` : ''}
       </div>`, 'win-modal finish-modal');
       if ($('finC')) $('finC').onclick = continueGame;
-      $('finN').onclick = () => { hideModal(); if (S.mode === 'remote' && !S.host) notify('Novou hru může spustit hostitel.', 'sys'); else newGame(); };
+      $('finN').onclick = () => { hideModal(); if (S.mode === 'remote' && !S.host) notify(t('hostNewOnly'), 'sys'); else newGame(); };
       $('finQ').onclick = () => { hideModal(); askQuit(); };
     }, 1300);
   }
@@ -1056,16 +1054,16 @@
         <td>${ps.cards}</td><td>${ps.got.fly}</td><td>${ps.got.firefly}</td><td>${ps.got.dragonfly}</td>
         <td>${ps.spells}</td><td>${ps.fireflies}</td><td>${ps.dist}</td></tr>`;
     }).join('');
-    return `<div class="stats"><h3>📊 Statistiky hry</h3>
+    return `<div class="stats"><h3>${t('statsTitle')}</h3>
       <div class="st-sum">
-        <span>🔁 Odehraná kola: <b>${s.round}</b></span>
-        <span>Přiletělo: ${ins('fly')} <b>${st.arrived.fly}</b> ${ins('firefly')} <b>${st.arrived.firefly}</b> ${ins('dragonfly')} <b>${st.arrived.dragonfly}</b></span>
-        <span>🧜 Vodník zasáhl: <b>${st.vodnik}×</b></span>
+        <span>${t('statRounds')} <b>${s.round}</b></span>
+        <span>${t('statArrived')} ${ins('fly')} <b>${st.arrived.fly}</b> ${ins('firefly')} <b>${st.arrived.firefly}</b> ${ins('dragonfly')} <b>${st.arrived.dragonfly}</b></span>
+        <span>${t('statVodnik')} <b>${st.vodnik}×</b></span>
       </div>
       <div class="st-wrap"><table class="st-table">
         <thead>
-          <tr><th rowspan="2">Hráč</th><th colspan="4">Sebráno</th><th colspan="2">Použito</th><th rowspan="2" title="Uskákaná vzdálenost v polích">👣 polí</th></tr>
-          <tr><th title="Kouzla">🃏</th><th>${ins('fly')}</th><th>${ins('firefly')}</th><th>${ins('dragonfly')}</th><th title="Kouzla">🃏</th><th title="Světlušky">${ins('firefly')}</th></tr>
+          <tr><th rowspan="2">${t('thPlayer')}</th><th colspan="4">${t('thCollected')}</th><th colspan="2">${t('thUsed')}</th><th rowspan="2" title="${t('fieldsTitle')}">${t('thFields')}</th></tr>
+          <tr><th title="${t('spellsTitle')}">🃏</th><th>${ins('fly')}</th><th>${ins('firefly')}</th><th>${ins('dragonfly')}</th><th title="${t('spellsTitle')}">🃏</th><th title="${t('firefliesTitle')}">${ins('firefly')}</th></tr>
         </thead><tbody>${rows}</tbody></table></div></div>`;
   }
 
@@ -1322,8 +1320,8 @@
     A.unlock();
     const inGame = !$('game').classList.contains('hidden') && S.snap;
     switch (k) {
-      case 's': A.toggleSfx(); renderHotkeys(); notify('Zvukové efekty: ' + (A.sfx ? 'ZAP' : 'VYP'), 'sys'); return;
-      case 'm': A.toggleMusic(); renderHotkeys(); notify('Hudba: ' + (A.music ? 'ZAP' : 'VYP'), 'sys'); return;
+      case 's': A.toggleSfx(); renderHotkeys(); notify(t('hkSfx', A.sfx), 'sys'); return;
+      case 'm': A.toggleMusic(); renderHotkeys(); notify(t('hkMusic', A.music), 'sys'); return;
       case 'r': showRules(); return;
       case 'c': if (inGame && S.snap.phase === 'won') continueGame(); return;
       case 'q': if (S.mode) askQuit(); return;
@@ -1379,7 +1377,23 @@
     setTimeout(() => $('wifiName').focus(), 100);
   }
 
+  /* Statické texty stránky podle jazyka: data-i18n (text), data-i18n-alt,
+   * data-i18n-aria a data-i18n-title (atributy). */
+  function applyStaticTexts() {
+    document.documentElement.lang = FL.LANG;
+    document.title = t('title');
+    document.querySelectorAll('[data-i18n]').forEach(e => { e.textContent = t(e.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-alt]').forEach(e => e.setAttribute('alt', t(e.dataset.i18nAlt)));
+    document.querySelectorAll('[data-i18n-aria]').forEach(e => e.setAttribute('aria-label', t(e.dataset.i18nAria)));
+    // přepínač jazyka: čeština je v kořeni, angličtina v en/ (stránka en/ má <base href="../">)
+    const lang = $('langLink');
+    lang.textContent = t('langOther');
+    lang.title = t('langOtherTitle');
+    lang.href = FL.LANG === 'en' ? 'index.html' : 'en/index.html';
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    applyStaticTexts();
     restoreLocalCfg();
     renderSeats();
     renderHotkeys();

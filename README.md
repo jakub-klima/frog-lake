@@ -1,11 +1,15 @@
-# Žabí jezero® – verze 2.2
+# Žabí jezero® / Frog Lake® – verze 2.3
 
 Digitální verze rodinné deskové hry **Žabí jezero** pro **1–8 hráčů na jednom
 zařízení** – jeden hráč proti počítačovým žábám, nebo více hráčů, kteří se u telefonu,
 tabletu či počítače střídají. Pravidla jsou v `game rules.txt` (pro deskovou hru) a ve
 hře pod klávesou **R**; obojí vzniká z jednoho zdroje `js/rules.js`.
 
-**Hrát:** https://jakub-klima.github.io/frog-lake/ (GitHub Pages, verze z větve `main`)
+**Hrát česky:** https://jakub-klima.github.io/frog-lake/
+**Play in English:** https://jakub-klima.github.io/frog-lake/en/
+
+(GitHub Pages, verze z větve `main`.) V menu je přepínač 🇬🇧 English / 🇨🇿 Čeština.
+Anglická verze jde otevřít i jako `index.html?lang=en`.
 
 ## Spuštění
 
@@ -114,10 +118,44 @@ skutečné nahrávky lze doplnit v dalším kroku v `js/audio.js`.
 * **Žabiják**: napadená žába nejdřív odevzdá 1 kredit, pak jde na START (pravidla
   i hláška to nově říkají výslovně).
 
+**Verze 2.3**
+* **Anglická verze** celé hry: menu, nápověda, hlášky, názvy kouzel a polí, kostky,
+  tabulka, statistiky, klávesy, výchozí jména hráčů (Croaky, Hopper, …) i počítačů
+  (Robo-Croak, …) a kompletní pravidla (`game rules EN.txt` pro deskovou hru).
+* Popisy karet kouzel sladěné s aktuálními pravidly (Kvákrobatika, Štika, Volavka, Žabiják).
+* Jména hráčů se ukládají zvlášť pro každý jazyk.
+
+### Jak funguje překlad
+* `js/i18n.js` – volba jazyka a texty rozhraní (menu, tlačítka, tabulka, okna).
+* `js/texts.js` – hlášky hry; `js/data.js` – pole, hmyz a karty kouzel;
+  `js/rules.js` – pravidla. Vše vždy v páru čeština / angličtina se stejnými klíči.
+* `en/index.html` se generuje z `index.html` příkazem `node tools/build-en.js`
+  (nebo `npm run build`, který přegeneruje i oba soubory pravidel) – needitovat ručně.
+* `node tools/i18ntest.js` (součást `npm test`) hlídá, že obě verze mají stejné klíče,
+  že v anglické hře ani v anglických textech není čeština a že `en/index.html` je aktuální.
+* Skrytá hra na více zařízeních (Wi-Fi, server) zatím přeložená není.
+
+| Česky | English |
+|---|---|
+| Žabí jezero | Frog Lake |
+| Kouzelný leknín / Velký leknín / Leknín | Magic Lily / Big lily pad / Lily pad |
+| Veleskok | Grand leap |
+| Vodník Lojzík | Lojzík the Water Goblin |
+| Moucha / Světluška / Vážka | Fly / Firefly / Dragonfly |
+| Voda / Vodní vír / Trampolína / Houba / Bažina / Břeh | Water / Whirlpool / Trampoline / Mushroom / Swamp / Shore |
+| Volavka, Štika, Hurikán, Tajfun | Heron, Pike, Hurricane, Typhoon |
+| Černá ruka, Černá magie, Vystřelovací jazyk | Black Hand, Black Magic, Shooting Tongue |
+| Bublina, Helma, Plováky, Kvákrobatika | Bubble, Helmet, Floaties, Croakrobatics |
+| Zlatá muška, Zářící světluška, Duhová vážka | Golden Fly, Glowing Firefly, Rainbow Dragonfly |
+| Záměna, Kraken, Eko katastrofa, Žabiják | Swap, Kraken, Eco Disaster, Frogslayer |
+| Akce, Kronika jezera, Tabulka skóre | Action, Lake chronicle, Scoreboard |
+
 ## Struktura
 
 ```
-index.html          – menu, online místnost, herní obrazovka
+index.html          – menu, online místnost, herní obrazovka (česky)
+en/index.html       – anglická stránka, generovaná z index.html (tools/build-en.js)
+js/i18n.js          – volba jazyka a texty rozhraní v češtině a angličtině
 css/style.css       – vzhled (desktop, tablet, telefon)
 js/data.js          – herní plán (typy polí, šipky) a 32 karet kouzel
 js/texts.js         – všechny hlášky a nápovědy (snadno se ladí)
@@ -133,7 +171,9 @@ js/ui.js            – vykreslení a ovládání
 server.js           – online server bez závislostí (Node.js)
 tools/selftest.js   – testy pravidel + simulace stovek her
 tools/servertest.js – test online serveru
-tools/export-rules.js – vygeneruje game rules.txt z js/rules.js
+tools/export-rules.js – vygeneruje game rules.txt a game rules EN.txt z js/rules.js
+tools/build-en.js   – vygeneruje en/index.html
+tools/i18ntest.js   – test překladu
 ```
 
 Engine má jediný vstup `apply(akce, hráč)` a jediný výstup `snapshot(hráč)` (čistý
